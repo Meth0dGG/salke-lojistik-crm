@@ -327,10 +327,10 @@ export default function LiveTrackingMap({
             <p><strong>Kargo:</strong> ${s.cargoType}</p>
             <p><strong>Taşıyıcı:</strong> ${s.carrier} (${s.weight.toLocaleString()} kg)</p>
             ${s.purchasePrice != null || s.salePrice != null ? `
-              <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex justify-between text-[10px]">
+              <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex justify-between text-[10px] items-center">
                 ${s.purchasePrice != null ? `<span><strong class="text-slate-400">Alış:</strong> ${s.purchasePrice}₺</span>` : ''}
                 ${s.salePrice != null ? `<span><strong class="text-slate-400">Satış:</strong> ${s.salePrice}₺</span>` : ''}
-                ${s.purchasePrice != null && s.salePrice != null ? `<span class="text-green-600 font-bold">Kâr: ${s.salePrice - s.purchasePrice}₺</span>` : ''}
+                ${s.purchasePrice != null && s.salePrice != null ? `<span class="text-green-600 font-bold flex items-center gap-1">Kâr: ${s.salePrice - s.purchasePrice}₺ ${s.purchasePrice > 0 ? `<span class="text-[8px] bg-green-100 text-green-700 px-1 py-0.5 rounded-md">%${Math.round(((s.salePrice - s.purchasePrice) / s.purchasePrice) * 100)}</span>` : ''}</span>` : ''}
               </div>
             ` : ''}
             <p class="text-[10px] text-slate-500 font-mono mt-1 border-t border-slate-100 pt-1 text-right">Tahmini Varış: ${s.estimatedArrival}</p>
@@ -456,11 +456,18 @@ export default function LiveTrackingMap({
                   <p><strong>Kargo Tipi:</strong> {selectedShipment.cargoType}</p>
                   <p><strong>Taşıyıcı:</strong> {selectedShipment.carrier}</p>
                   {(selectedShipment.purchasePrice != null || selectedShipment.salePrice != null) && (
-                    <div className="pt-2 mt-2 border-t border-indigo-100/50 dark:border-slate-800 flex justify-between text-[11px]">
+                    <div className="pt-2 mt-2 border-t border-indigo-100/50 dark:border-slate-800 flex justify-between items-center text-[11px]">
                       {selectedShipment.purchasePrice != null && <span><strong>Alış:</strong> {selectedShipment.purchasePrice}₺</span>}
                       {selectedShipment.salePrice != null && <span><strong>Satış:</strong> {selectedShipment.salePrice}₺</span>}
                       {selectedShipment.purchasePrice != null && selectedShipment.salePrice != null && (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">Kâr: {selectedShipment.salePrice - selectedShipment.purchasePrice}₺</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                          Kâr: {selectedShipment.salePrice - selectedShipment.purchasePrice}₺
+                          {selectedShipment.purchasePrice > 0 && (
+                            <span className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 px-1.5 py-0.5 rounded-md">
+                              %{Math.round(((selectedShipment.salePrice - selectedShipment.purchasePrice) / selectedShipment.purchasePrice) * 100)}
+                            </span>
+                          )}
+                        </span>
                       )}
                     </div>
                   )}

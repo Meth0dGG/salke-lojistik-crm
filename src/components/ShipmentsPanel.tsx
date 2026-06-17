@@ -607,8 +607,13 @@ export default function ShipmentsPanel({
                         {s.purchasePrice != null && <div>Alış: {s.purchasePrice}₺</div>}
                         {s.salePrice != null && <div>Satış: {s.salePrice}₺</div>}
                         {s.purchasePrice != null && s.salePrice != null && (
-                          <div className="font-bold text-green-600 mt-1 pt-1 border-t border-slate-100 dark:border-slate-800">
-                            Kâr: {s.salePrice - s.purchasePrice}₺
+                          <div className="font-bold text-green-600 mt-1 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1">
+                            Kâr: {s.salePrice - s.purchasePrice}₺ 
+                            {s.purchasePrice > 0 && (
+                              <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1.5 py-0.5 rounded-md">
+                                %{Math.round(((s.salePrice - s.purchasePrice) / s.purchasePrice) * 100)}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -683,8 +688,13 @@ export default function ShipmentsPanel({
                       {s.purchasePrice != null && s.salePrice != null && <span> | </span>}
                       {s.salePrice != null && <span>S: {s.salePrice}₺</span>}
                       {s.purchasePrice != null && s.salePrice != null && (
-                        <span className="font-bold text-green-600 ml-1">
-                          (Kâr: {s.salePrice - s.purchasePrice}₺)
+                        <span className="font-bold text-green-600 ml-1 inline-flex items-center gap-0.5">
+                          (Kâr: {s.salePrice - s.purchasePrice}₺
+                          {s.purchasePrice > 0 && (
+                            <span className="text-[8px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1 py-0.5 rounded-md ml-0.5">
+                              %{Math.round(((s.salePrice - s.purchasePrice) / s.purchasePrice) * 100)}
+                            </span>
+                          )})
                         </span>
                       )}
                     </div>
