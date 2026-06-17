@@ -76,6 +76,8 @@ export default function ShipmentsPanel({
   const [carrier, setCarrier] = useState('');
   const [cargoType, setCargoType] = useState('');
   const [weight, setWeight] = useState(1000);
+  const [purchasePrice, setPurchasePrice] = useState<number | ''>('');
+  const [salePrice, setSalePrice] = useState<number | ''>('');
   const [departureDate, setDepartureDate] = useState('2026-06-12');
   const [estimatedArrival, setEstimatedArrival] = useState('2026-06-18');
 
@@ -122,6 +124,8 @@ export default function ShipmentsPanel({
     setCarrier('Hepsijet');
     setCargoType('Elektronik Eşya');
     setWeight(1500);
+    setPurchasePrice('');
+    setSalePrice('');
     setDepartureDate(new Date().toISOString().split('T')[0]);
     setEstimatedArrival(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
     setIsFormOpen(true);
@@ -152,6 +156,8 @@ export default function ShipmentsPanel({
     setCarrier(shipment.carrier);
     setCargoType(shipment.cargoType);
     setWeight(shipment.weight);
+    setPurchasePrice(shipment.purchasePrice || '');
+    setSalePrice(shipment.salePrice || '');
     setDepartureDate(shipment.departureDate);
     setEstimatedArrival(shipment.estimatedArrival);
     setIsFormOpen(true);
@@ -178,6 +184,8 @@ export default function ShipmentsPanel({
       carrier: carrier || "Yurtiçi Kargo",
       cargoType: cargoType || "Ticari Ürün",
       weight: Number(weight) || 1000,
+      purchasePrice: purchasePrice === '' ? undefined : Number(purchasePrice),
+      salePrice: salePrice === '' ? undefined : Number(salePrice),
       createdBy: editingShipment ? editingShipment.createdBy : (loggedInUser ? loggedInUser.personnelName : 'Sistem')
     };
 
@@ -408,6 +416,28 @@ export default function ShipmentsPanel({
             </div>
 
             <div>
+              <label className="block text-xs font-extrabold text-blue-955 dark:text-white mb-1">Alış Fiyatı (₺)</label>
+              <input 
+                type="number" 
+                value={purchasePrice} 
+                onChange={(e) => setPurchasePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="Örn: 1500"
+                className="w-full bg-white dark:bg-slate-900 border-2 border-blue-600 dark:border-blue-400 text-blue-955 font-extrabold dark:text-white rounded-lg p-2.5 text-xs sm:text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-extrabold text-blue-955 dark:text-white mb-1">Satış Fiyatı (₺)</label>
+              <input 
+                type="number" 
+                value={salePrice} 
+                onChange={(e) => setSalePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="Örn: 2000"
+                className="w-full bg-white dark:bg-slate-900 border-2 border-blue-600 dark:border-blue-400 text-blue-955 font-extrabold dark:text-white rounded-lg p-2.5 text-xs sm:text-sm"
+              />
+            </div>
+
+            <div>
               <label className="block text-xs font-extrabold text-blue-955 dark:text-white mb-1">{t.status}</label>
               <select
                 value={status}
@@ -566,9 +596,21 @@ export default function ShipmentsPanel({
                     <div className="flex items-center gap-1"><MapPin size={11} className="text-indigo-500" /> {s.origin}</div>
                     <div className="flex items-center gap-1"><MapPin size={11} className="text-emerald-500" /> {s.destination}</div>
                   </td>
-                  <td className="py-4 px-4 text-xs text-slate-700 dark:text-slate-350 space-y-0.5">
-                    <div className="font-semibold">{s.cargoType}</div>
+                  <td className="p-3">
+                    <div className="font-extrabold text-blue-955 dark:text-slate-200 text-xs sm:text-sm">{s.cargoType}</div>
                     <div className="text-[10px] text-slate-400 font-mono">{s.carrier} | {s.weight.toLocaleString()} kg</div>
+                    {(s.purchasePrice !== undefined || s.salePrice !== undefined) && (
+                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        {s.purchasePrice !== undefined && <span>Alış: {s.purchasePrice}₺</span>}
+                        {s.purchasePrice !== undefined && s.salePrice !== undefined && <span> | </span>}
+                        {s.salePrice !== undefined && <span>Satış: {s.salePrice}₺</span>}
+                        {s.purchasePrice !== undefined && s.salePrice !== undefined && (
+                          <span className="font-bold text-green-600 ml-1">
+                            ({s.salePrice - s.purchasePrice}₺ Kâr)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="py-4 px-4 text-[11px] text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
                     <div>Sevk: {s.departureDate}</div>
@@ -631,6 +673,18 @@ export default function ShipmentsPanel({
                 <div>
                   <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 block">Yük / Ağırlık</span>
                   {s.cargoType} ({s.weight} kg)
+                  {(s.purchasePrice !== undefined || s.salePrice !== undefined) && (
+                    <div className="text-[10px] mt-1">
+                      {s.purchasePrice !== undefined && <span>A: {s.purchasePrice}₺</span>}
+                      {s.purchasePrice !== undefined && s.salePrice !== undefined && <span> | </span>}
+                      {s.salePrice !== undefined && <span>S: {s.salePrice}₺</span>}
+                      {s.purchasePrice !== undefined && s.salePrice !== undefined && (
+                        <span className="font-bold text-green-600 ml-1">
+                          (Kâr: {s.salePrice - s.purchasePrice}₺)
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 block">Hizmet Alan</span>

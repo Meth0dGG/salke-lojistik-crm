@@ -29,6 +29,8 @@ export interface Shipment {
   carrier: string;
   cargoType: string;
   weight: number; // kg
+  purchasePrice?: number; // Alış fiyatı
+  salePrice?: number; // Satış fiyatı
   createdBy?: string;
 }
 

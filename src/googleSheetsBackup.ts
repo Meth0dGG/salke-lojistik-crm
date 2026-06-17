@@ -453,25 +453,31 @@ export async function backupToGoogleSheets(
   // Sevkiyat verilerini hazırla
   const shipmentHeaders = [
     'ID', 'Takip No', 'Müşteri', 'Çıkış Noktası', 'Varış Noktası', 
-    'Durum', 'Taşıyıcı', 'Yük Tipi', 'Ağırlık (kg)', 
+    'Durum', 'Taşıyıcı', 'Yük Tipi', 'Ağırlık (kg)', 'Alış Fiyatı (₺)', 'Satış Fiyatı (₺)', 'Kâr (₺)',
     'Kalkış Tarihi', 'Tahmini Varış', 'Gecikme (dk)', 'Gecikme Nedeni', 'Oluşturan'
   ];
-  const shipmentRows = shipments.map(s => [
-    s.id,
-    s.trackingNumber,
-    s.customerName,
-    s.origin,
-    s.destination,
-    translateShipmentStatus(s.status),
-    s.carrier,
-    s.cargoType,
-    s.weight.toString(),
-    s.departureDate,
-    s.estimatedArrival,
-    s.delayMinutes.toString(),
-    s.delayReason,
-    s.createdBy || '-'
-  ]);
+  const shipmentRows = shipments.map(s => {
+    const profit = (s.purchasePrice !== undefined && s.salePrice !== undefined) ? (s.salePrice - s.purchasePrice) : '';
+    return [
+      s.id,
+      s.trackingNumber,
+      s.customerName,
+      s.origin,
+      s.destination,
+      translateShipmentStatus(s.status),
+      s.carrier,
+      s.cargoType,
+      s.weight.toString(),
+      s.purchasePrice !== undefined ? s.purchasePrice.toString() : '',
+      s.salePrice !== undefined ? s.salePrice.toString() : '',
+      profit.toString(),
+      s.departureDate,
+      s.estimatedArrival,
+      s.delayMinutes.toString(),
+      s.delayReason,
+      s.createdBy || '-'
+    ];
+  });
   
   await writeSheetData(spreadsheetId, 'Sevkiyatlar', [shipmentHeaders, ...shipmentRows]);
   
