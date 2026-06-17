@@ -15,7 +15,6 @@ const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
 // Google Cloud Console'dan alınan OAuth 2.0 Client ID
 // Firebase projesi: salke-savas-aktarim
 // Ayarlamak için: https://console.cloud.google.com/apis/credentials?project=salke-savas-aktarim
-const API_KEY = 'AIzaSyC9LH1agAm48jh3ct8wJ4nisMdhvJ4_UCs';
 const CLIENT_ID = '916796491480-0n64fbv67ti0nnbt03tfopctr49o4eei.apps.googleusercontent.com';
 
 let tokenClient: any = null;
@@ -51,7 +50,6 @@ export const initGapi = async () => {
       clearTimeout(timeoutId);
       try {
         await w.gapi.client.init({
-          apiKey: API_KEY,
           discoveryDocs: [DISCOVERY_DOC],
         });
         gapiInited = true;
