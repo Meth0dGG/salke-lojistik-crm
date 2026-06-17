@@ -16,7 +16,7 @@ const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
 // Firebase projesi: salke-savas-aktarim
 // Ayarlamak için: https://console.cloud.google.com/apis/credentials?project=salke-savas-aktarim
 const API_KEY = 'AIzaSyC9LH1agAm48jh3ct8wJ4nisMdhvJ4_UCs';
-const CLIENT_ID = '921846992474-placeholder.apps.googleusercontent.com'; // Google Cloud Console'dan güncellenecek
+const CLIENT_ID = '916796491480-0n64fbv67ti0nnbt03tfopctr49o4eei.apps.googleusercontent.com';
 
 let tokenClient: any = null;
 let gapiInited = false;
