@@ -576,6 +576,7 @@ export default function ShipmentsPanel({
                 <th className="py-3 px-4">Yük Sahibi</th>
                 <th className="py-3 px-4">Rota Detayı</th>
                 <th className="py-3 px-4">Kargo & Taşıyıcı</th>
+                <th className="py-3 px-4">Fiyatlandırma</th>
                 <th className="py-3 px-4">Zaman Tablosu</th>
                 <th className="py-3 px-4">Durum</th>
                 <th className="py-3 px-4 text-right">{t.actions}</th>
@@ -596,20 +597,23 @@ export default function ShipmentsPanel({
                     <div className="flex items-center gap-1"><MapPin size={11} className="text-indigo-500" /> {s.origin}</div>
                     <div className="flex items-center gap-1"><MapPin size={11} className="text-emerald-500" /> {s.destination}</div>
                   </td>
-                  <td className="p-3">
+                  <td className="py-4 px-4">
                     <div className="font-extrabold text-blue-955 dark:text-slate-200 text-xs sm:text-sm">{s.cargoType}</div>
                     <div className="text-[10px] text-slate-400 font-mono">{s.carrier} | {s.weight.toLocaleString()} kg</div>
-                    {(s.purchasePrice != null || s.salePrice != null) && (
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        {s.purchasePrice != null && <span>Alış: {s.purchasePrice}₺</span>}
-                        {s.purchasePrice != null && s.salePrice != null && <span> | </span>}
-                        {s.salePrice != null && <span>Satış: {s.salePrice}₺</span>}
+                  </td>
+                  <td className="py-4 px-4">
+                    {(s.purchasePrice != null || s.salePrice != null) ? (
+                      <div className="text-[10px] text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
+                        {s.purchasePrice != null && <div>Alış: {s.purchasePrice}₺</div>}
+                        {s.salePrice != null && <div>Satış: {s.salePrice}₺</div>}
                         {s.purchasePrice != null && s.salePrice != null && (
-                          <span className="font-bold text-green-600 ml-1">
-                            ({s.salePrice - s.purchasePrice}₺ Kâr)
-                          </span>
+                          <div className="font-bold text-green-600 mt-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            Kâr: {s.salePrice - s.purchasePrice}₺
+                          </div>
                         )}
                       </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic">Girilmeyen Fiyat</span>
                     )}
                   </td>
                   <td className="py-4 px-4 text-[11px] text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
