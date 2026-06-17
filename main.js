@@ -93,7 +93,12 @@ function createWindow() {
   // Güvenlik ve Akış: Harici bağlantıları (örneğin harici linkler, harita linkleri vb.) 
   // dahili pencerede açmak yerine kullanıcının varsayılan tarayıcısında açalım.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (!url.startsWith(LIVE_WEB_URL) && !url.startsWith('file://')) {
+    // Google hesap giriş popup'larına izin ver
+    if (url.startsWith('https://accounts.google.com/') || url.includes('google.com/')) {
+      return { action: 'allow' };
+    }
+    
+    if (!url.startsWith(LIVE_WEB_URL) && !url.startsWith('file://') && !url.startsWith('http://localhost')) {
       shell.openExternal(url);
       return { action: 'deny' };
     }
@@ -200,6 +205,12 @@ function setupAutoUpdater() {
 }
 
 app.whenReady().then(() => {
+  // Tüm yeni açılan pencereler (popup'lar dahil) için User-Agent'ı Chrome yap
+  // Bu sayede Google OAuth popup'ı açıldığında Electron olduğunu anlayıp beyaz ekranda kalmaz.
+  app.on('browser-window-created', (event, win) => {
+    win.webContents.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+  });
+
   createWindow();
   setupAutoUpdater();
 
