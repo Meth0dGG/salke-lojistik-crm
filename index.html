@@ -7,9 +7,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;z-index:9999;padding:10px;font-size:12px;">Global Error: ' + e.message + '</div>');
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;top:40px;left:0;right:0;background:orange;color:white;z-index:9999;padding:10px;font-size:12px;">Promise Rejection: ' + (e.reason && e.reason.message || e.reason || 'Unknown') + '</div>');
+      });
+    </script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

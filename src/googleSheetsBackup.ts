@@ -42,7 +42,13 @@ export const initGapi = async () => {
       reject(new Error('Google API kütüphanesi yüklenemedi'));
       return;
     }
+
+    const timeoutId = setTimeout(() => {
+      reject(new Error('gapi.load 5 saniye içinde yanıt vermedi (zaman aşımı). İnternet bağlantısını veya güvenlik duvarını kontrol edin.'));
+    }, 5000);
+
     w.gapi.load('client', async () => {
+      clearTimeout(timeoutId);
       try {
         await w.gapi.client.init({
           apiKey: API_KEY,
@@ -50,9 +56,9 @@ export const initGapi = async () => {
         });
         gapiInited = true;
         resolve();
-      } catch (err) {
+      } catch (err: any) {
         console.error('GAPI Init Hatası:', err);
-        reject(err);
+        reject(new Error(err?.message || err?.details || JSON.stringify(err)));
       }
     });
   });
