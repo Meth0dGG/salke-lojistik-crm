@@ -840,6 +840,8 @@ export default function App() {
                 userRole={currentUserRole}
                 backups={backups}
                 onTriggerBackup={handleTriggerManualBackup}
+                customers={customers}
+                shipments={shipments}
               />
             )}
 
