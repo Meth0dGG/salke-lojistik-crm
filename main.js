@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell, dialog } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
+import express from 'express';
 
 const require = createRequire(import.meta.url);
 const { autoUpdater } = require('electron-updater');
@@ -17,6 +18,39 @@ const __dirname = path.dirname(__filename);
 const LIVE_WEB_URL = "https://ais-pre-fdjrt74tczrdoxwzammtes-411329602448.europe-west1.run.app";
 
 let mainWindow = null;
+
+let localServer = null;
+
+function startLocalServerAndLoad(win) {
+  if (localServer) {
+    win.loadURL('http://localhost:3000');
+    return;
+  }
+  
+  const serverApp = express();
+  serverApp.use(express.static(path.join(__dirname, 'dist')));
+  
+  serverApp.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
+
+  localServer = serverApp.listen(3000, 'localhost', () => {
+    console.log('Yerel sunucu http://localhost:3000 adresinde başlatıldı.');
+    win.loadURL('http://localhost:3000').catch(err => {
+      console.error('Local sunucu yüklenemedi:', err);
+    });
+  });
+  
+  localServer.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log('Port 3000 zaten kullanımda, doğrudan bağlanılıyor...');
+      win.loadURL('http://localhost:3000');
+    } else {
+      console.error('Local server hatası:', err);
+      win.loadFile(path.join(__dirname, 'dist/index.html'));
+    }
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -41,18 +75,14 @@ function createWindow() {
   // Doğrudan yerel, yüksek hızlı ve güvenli derlenmiş (dist/index.html) dosyalarını yükle.
   if (isDev || isAistudioPreview) {
     console.log("Geliştirme / AI Studio Önizleme modu algılandı. Yerel React dosyaları (dist/index.html) yükleniyor...");
-    mainWindow.loadFile(path.join(__dirname, 'dist/index.html')).catch((localErr) => {
-      console.error("Yerel dosyalar yüklenirken hata oluştu (Lütfen önce 'npm run build' yaptığınızdan emin olun):", localErr);
-    });
+    startLocalServerAndLoad(mainWindow);
   } else {
     // Gerçek bir canlı dağıtım (production) URL'i girildiğinde burası çalışır:
     console.log(`Masaüstü uygulaması canlı web adresine bağlanıyor: ${LIVE_WEB_URL}`);
     mainWindow.loadURL(LIVE_WEB_URL).catch((err) => {
       console.warn("Canlı web uygulaması yüklenemedi, çevrimdışı yerel yedek moduna geçiliyor...", err);
       // İnternet yoksa veya yüklenemezse yerel derlenmiş React dosyalarını yükle (Çevrimdışı Mod Fallback)
-      mainWindow.loadFile(path.join(__dirname, 'dist/index.html')).catch((localErr) => {
-        console.error("Yerel yedek dosyalar da yüklenemedi:", localErr);
-      });
+      startLocalServerAndLoad(mainWindow);
     });
   }
 
