@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-mac/
+
+# Icon build artifacts
+build/icon.iconset/
+
+# OS files
+.DS_Store
+
+# Environment
+.env
+
+# Logs
+*.log

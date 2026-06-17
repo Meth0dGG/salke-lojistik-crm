@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer record in the logistics CRM",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Customer ID" },
+        "name": { "type": "string", "description": "Full sales contact name" },
+        "company": { "type": "string", "description": "Company name" },
+        "email": { "type": "string", "description": "Email address" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "status": { "type": "string", "enum": ["active", "lead", "vip", "inactive"] },
+        "representative": { "type": "string", "description": "Assigned representative name or email" },
+        "country": { "type": "string", "description": "Origin/HQ country" }
+      },
+      "required": ["id", "name", "company", "status"]
+    },
+    "Shipment": {
+      "title": "Shipment",
+      "description": "Logistics shipment record tracked in real time",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "trackingNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "status": { "type": "string", "enum": ["preparing", "transit", "delivered", "cancelled"] },
+        "delayMinutes": { "type": "number" },
+        "delayReason": { "type": "string" },
+        "departureDate": { "type": "string" },
+        "estimatedArrival": { "type": "string" },
+        "carrier": { "type": "string" },
+        "cargoType": { "type": "string" },
+        "weight": { "type": "number" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "trackingNumber", "customerId", "status", "origin", "destination"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Real-time delay/system notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["delay", "backup", "security", "system", "feedback"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "type", "title", "message", "timestamp", "read"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Security audit logs representing database/system actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "user": { "type": "string" },
+        "role": { "type": "string" },
+        "action": { "type": "string" },
+        "ip": { "type": "string" },
+        "hash": { "type": "string" },
+        "severity": { "type": "string", "enum": ["info", "warning", "critical"] }
+      },
+      "required": ["id", "timestamp", "user", "action", "hash", "severity"]
+    },
+    "Backup": {
+      "title": "Backup",
+      "description": "Logistics database backups logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "filename": { "type": "string" },
+        "size": { "type": "string" },
+        "type": { "type": "string", "enum": ["auto", "manual"] },
+        "status": { "type": "string", "enum": ["success", "failed"] },
+        "checksum": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "filename", "size", "type", "status"]
+    },
+    "SystemUser": {
+      "title": "SystemUser",
+      "description": "A system dashboard user with custom local credentials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "logistics_manager", "support", "customer_rep"] },
+        "personnelName": { "type": "string" }
+      },
+      "required": ["id", "username", "role", "personnelName"]
+    }
+  },
+  "firestore": {
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "All customer records"
+    },
+    "/shipments/{shipmentId}": {
+      "schema": "Shipment",
+      "description": "All tracked shipments"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Global and system notification items"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Security audit logging"
+    },
+    "/backups/{backupId}": {
+      "schema": "Backup",
+      "description": "Database backup logs"
+    },
+    "/systemUsers/{userId}": {
+      "schema": "SystemUser",
+      "description": "Registered ERP System users"
+    }
+  }
+}

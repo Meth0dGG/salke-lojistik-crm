@@ -1,0 +1,6 @@
+{
+  "name": "Lojistik CRM ve Sevkiyat Dashboard",
+  "description": "Lojistik firmaları için modüler CRM, sevkiyat takibi, anlık gecikme bildirimleri, rol yetkilendirme, yedekleme ve API entegrasyon paneli.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

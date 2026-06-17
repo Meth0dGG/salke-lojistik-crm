@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Customer validation helper
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['id', 'name', 'company', 'status'])
+        && data.id is string
+        && data.name is string && data.name.size() <= 200
+        && data.company is string && data.company.size() <= 200
+        && data.status in ['active', 'lead', 'vip', 'inactive'];
+    }
+
+    // Shipment validation helper
+    function isValidShipment(data) {
+      return data.keys().hasAll(['id', 'trackingNumber', 'customerId', 'status', 'origin', 'destination'])
+        && data.id is string
+        && data.trackingNumber is string
+        && data.customerId is string
+        && data.status in ['preparing', 'transit', 'delivered', 'cancelled']
+        && data.origin is string
+        && data.destination is string;
+    }
+
+    // Notification validation helper
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'type', 'title', 'message', 'timestamp', 'read'])
+        && data.id is string
+        && data.type in ['delay', 'backup', 'security', 'system', 'feedback']
+        && data.title is string
+        && data.message is string
+        && data.read is bool;
+    }
+
+    // Audit Log validation helper
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['id', 'timestamp', 'user', 'action', 'severity'])
+        && data.id is string
+        && data.user is string
+        && data.action is string
+        && data.severity in ['info', 'warning', 'critical'];
+    }
+
+    // Backup validation helper
+    function isValidBackup(data) {
+      return data.keys().hasAll(['id', 'timestamp', 'filename', 'size', 'type', 'status'])
+        && data.id is string
+        && data.filename is string
+        && data.size is string
+        && data.type in ['auto', 'manual']
+        && data.status in ['success', 'failed'];
+    }
+
+    // System User validation helper
+    function isValidSystemUser(data) {
+      return data.keys().hasAll(['id', 'username', 'role', 'personnelName'])
+        && data.id is string
+        && data.username is string
+        && data.role in ['admin', 'logistics_manager', 'support', 'customer_rep']
+        && data.personnelName is string;
+    }
+
+    // Rules for Customers
+    match /customers/{customerId} {
+      allow read: if true;
+      allow create, update: if isValidCustomer(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Rules for Shipments
+    match /shipments/{shipmentId} {
+      allow read: if true;
+      allow create, update: if isValidShipment(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Rules for Notifications
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create, update: if isValidNotification(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Rules for Audit Logs
+    match /auditLogs/{logId} {
+      allow read: if true;
+      allow create, update: if isValidAuditLog(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Rules for Backups
+    match /backups/{backupId} {
+      allow read: if true;
+      allow create, update: if isValidBackup(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Rules for System Users
+    match /systemUsers/{userId} {
+      allow read: if true;
+      allow create, update: if isValidSystemUser(request.resource.data);
+      allow delete: if true;
+    }
+  }
+}
