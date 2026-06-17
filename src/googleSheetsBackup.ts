@@ -160,18 +160,31 @@ async function findOrCreateSpreadsheet(): Promise<{ spreadsheetId: string; sprea
   if (!token) throw new Error('Google hesabına giriş yapılmamış');
 
   // Mevcut spreadsheet'i Drive'da ara
-  const searchResponse = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name contains 'Salke Lojistik CRM Yedek' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&orderBy=modifiedTime desc&fields=files(id,name,webViewLink)`,
-    {
-      headers: { Authorization: `Bearer ${token}` }
+  let existingFileId = null;
+  let existingFileUrl = null;
+
+  try {
+    const searchResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name contains 'Salke Lojistik CRM Yedek' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&orderBy=modifiedTime desc&fields=files(id,name,webViewLink)`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    const searchData = await searchResponse.json();
+    if (searchResponse.ok && searchData.files && searchData.files.length > 0) {
+      existingFileId = searchData.files[0].id;
+      existingFileUrl = searchData.files[0].webViewLink;
+    } else if (!searchResponse.ok) {
+      console.warn("Drive API ile arama yapılamadı (Drive API aktif olmayabilir). Yeni tablo oluşturulacak.", searchData);
     }
-  );
-  const searchData = await searchResponse.json();
+  } catch (err) {
+    console.warn("Drive API ağ hatası. Yeni tablo oluşturulacak.", err);
+  }
   
-  if (searchData.files && searchData.files.length > 0) {
+  if (existingFileId && existingFileUrl) {
     return {
-      spreadsheetId: searchData.files[0].id,
-      spreadsheetUrl: searchData.files[0].webViewLink
+      spreadsheetId: existingFileId,
+      spreadsheetUrl: existingFileUrl
     };
   }
 
@@ -179,8 +192,9 @@ async function findOrCreateSpreadsheet(): Promise<{ spreadsheetId: string; sprea
   const now = new Date();
   const dateStr = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear()}`;
   
+  // Sadece Sheets API kullanarak yeni bir tablo oluştur
   const createResponse = await fetch(
-    'https://www.googleapis.com/drive/v3/files',
+    'https://sheets.googleapis.com/v4/spreadsheets',
     {
       method: 'POST',
       headers: {
@@ -188,16 +202,20 @@ async function findOrCreateSpreadsheet(): Promise<{ spreadsheetId: string; sprea
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        name: `Salke Lojistik CRM Yedek - ${dateStr}`,
-        mimeType: 'application/vnd.google-apps.spreadsheet'
+        properties: {
+          title: `Salke Lojistik CRM Yedek - ${dateStr}`
+        }
       })
     }
   );
   const fileData = await createResponse.json();
+  if (!createResponse.ok) {
+    throw new Error(`Sheets API Tablo Oluşturma Hatası: ${fileData.error?.message || createResponse.statusText}`);
+  }
   
   return {
-    spreadsheetId: fileData.id,
-    spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${fileData.id}`
+    spreadsheetId: fileData.spreadsheetId,
+    spreadsheetUrl: fileData.spreadsheetUrl
   };
 }
 
@@ -210,10 +228,14 @@ async function ensureSheets(spreadsheetId: string, sheetNames: string[]): Promis
   
   // Mevcut sheet'leri al
   const metaResponse = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title,sheets.properties.sheetId`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   const metaData = await metaResponse.json();
+  if (!metaResponse.ok) {
+    throw new Error(`Sheets API Meta Hatası: ${metaData.error?.message || metaResponse.statusText}`);
+  }
+
   const existingSheets = metaData.sheets?.map((s: any) => s.properties.title) || [];
   
   const requests: any[] = [];
@@ -228,18 +250,21 @@ async function ensureSheets(spreadsheetId: string, sheetNames: string[]): Promis
     }
   }
 
-  // Varsayılan "Sheet1" varsa ve kullanmıyorsak sil
-  if (existingSheets.includes('Sheet1') && !sheetNames.includes('Sheet1') && requests.length > 0) {
-    const sheetId = metaData.sheets.find((s: any) => s.properties.title === 'Sheet1')?.properties?.sheetId;
-    if (sheetId !== undefined) {
-      requests.push({
-        deleteSheet: { sheetId }
-      });
+  // Varsayılan "Sheet1" veya "Sayfa1" varsa ve kullanmıyorsak sil
+  const defaultSheets = ['Sheet1', 'Sayfa1'];
+  for (const ds of defaultSheets) {
+    if (existingSheets.includes(ds) && !sheetNames.includes(ds) && requests.length > 0) {
+      const sheetId = metaData.sheets.find((s: any) => s.properties.title === ds)?.properties?.sheetId;
+      if (sheetId !== undefined) {
+        requests.push({
+          deleteSheet: { sheetId }
+        });
+      }
     }
   }
   
   if (requests.length > 0) {
-    await fetch(
+    const batchResponse = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
       {
         method: 'POST',
@@ -250,6 +275,10 @@ async function ensureSheets(spreadsheetId: string, sheetNames: string[]): Promis
         body: JSON.stringify({ requests })
       }
     );
+    const batchData = await batchResponse.json();
+    if (!batchResponse.ok) {
+      throw new Error(`Sheets API Batch Update Hatası: ${batchData.error?.message || batchResponse.statusText}`);
+    }
   }
 }
 
@@ -261,7 +290,7 @@ async function writeSheetData(spreadsheetId: string, sheetName: string, data: an
   const token = w.gapi.client.getToken()?.access_token;
 
   // Önce sheet'i temizle
-  await fetch(
+  const clearResp = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}:clear`,
     {
       method: 'POST',
@@ -272,9 +301,13 @@ async function writeSheetData(spreadsheetId: string, sheetName: string, data: an
       body: JSON.stringify({})
     }
   );
+  if (!clearResp.ok) {
+    const clearData = await clearResp.json();
+    throw new Error(`Sheets API Clear Hatası: ${clearData.error?.message || clearResp.statusText}`);
+  }
 
   // Yeni veriyi yaz
-  await fetch(
+  const appendResp = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
@@ -287,6 +320,10 @@ async function writeSheetData(spreadsheetId: string, sheetName: string, data: an
       })
     }
   );
+  if (!appendResp.ok) {
+    const appendData = await appendResp.json();
+    throw new Error(`Sheets API Append Hatası: ${appendData.error?.message || appendResp.statusText}`);
+  }
 }
 
 /**
@@ -302,6 +339,8 @@ async function formatHeaderRow(spreadsheetId: string, sheetName: string): Promis
     { headers: { Authorization: `Bearer ${token}` } }
   );
   const metaData = await metaResponse.json();
+  if (!metaResponse.ok) return; // Sessizce geçebiliriz, formatlama kritik değil
+  
   const sheet = metaData.sheets?.find((s: any) => s.properties.title === sheetName);
   if (!sheet) return;
   
