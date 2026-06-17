@@ -326,11 +326,11 @@ export default function LiveTrackingMap({
             <p><strong>Karayolu Güzergahı:</strong> ${currentRouteCities.join(' ➔ ')}</p>
             <p><strong>Kargo:</strong> ${s.cargoType}</p>
             <p><strong>Taşıyıcı:</strong> ${s.carrier} (${s.weight.toLocaleString()} kg)</p>
-            ${s.purchasePrice !== undefined || s.salePrice !== undefined ? `
+            ${s.purchasePrice != null || s.salePrice != null ? `
               <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex justify-between text-[10px]">
-                ${s.purchasePrice !== undefined ? `<span><strong class="text-slate-400">Alış:</strong> ${s.purchasePrice}₺</span>` : ''}
-                ${s.salePrice !== undefined ? `<span><strong class="text-slate-400">Satış:</strong> ${s.salePrice}₺</span>` : ''}
-                ${s.purchasePrice !== undefined && s.salePrice !== undefined ? `<span class="text-green-600 font-bold">Kâr: ${s.salePrice - s.purchasePrice}₺</span>` : ''}
+                ${s.purchasePrice != null ? `<span><strong class="text-slate-400">Alış:</strong> ${s.purchasePrice}₺</span>` : ''}
+                ${s.salePrice != null ? `<span><strong class="text-slate-400">Satış:</strong> ${s.salePrice}₺</span>` : ''}
+                ${s.purchasePrice != null && s.salePrice != null ? `<span class="text-green-600 font-bold">Kâr: ${s.salePrice - s.purchasePrice}₺</span>` : ''}
               </div>
             ` : ''}
             <p class="text-[10px] text-slate-500 font-mono mt-1 border-t border-slate-100 pt-1 text-right">Tahmini Varış: ${s.estimatedArrival}</p>
@@ -455,11 +455,11 @@ export default function LiveTrackingMap({
                   <p><strong>Yükleyici:</strong> {selectedShipment.customerName}</p>
                   <p><strong>Kargo Tipi:</strong> {selectedShipment.cargoType}</p>
                   <p><strong>Taşıyıcı:</strong> {selectedShipment.carrier}</p>
-                  {(selectedShipment.purchasePrice !== undefined || selectedShipment.salePrice !== undefined) && (
+                  {(selectedShipment.purchasePrice != null || selectedShipment.salePrice != null) && (
                     <div className="pt-2 mt-2 border-t border-indigo-100/50 dark:border-slate-800 flex justify-between text-[11px]">
-                      {selectedShipment.purchasePrice !== undefined && <span><strong>Alış:</strong> {selectedShipment.purchasePrice}₺</span>}
-                      {selectedShipment.salePrice !== undefined && <span><strong>Satış:</strong> {selectedShipment.salePrice}₺</span>}
-                      {selectedShipment.purchasePrice !== undefined && selectedShipment.salePrice !== undefined && (
+                      {selectedShipment.purchasePrice != null && <span><strong>Alış:</strong> {selectedShipment.purchasePrice}₺</span>}
+                      {selectedShipment.salePrice != null && <span><strong>Satış:</strong> {selectedShipment.salePrice}₺</span>}
+                      {selectedShipment.purchasePrice != null && selectedShipment.salePrice != null && (
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">Kâr: {selectedShipment.salePrice - selectedShipment.purchasePrice}₺</span>
                       )}
                     </div>

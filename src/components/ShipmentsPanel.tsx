@@ -184,9 +184,9 @@ export default function ShipmentsPanel({
       carrier: carrier || "Yurtiçi Kargo",
       cargoType: cargoType || "Ticari Ürün",
       weight: Number(weight) || 1000,
-      purchasePrice: purchasePrice === '' ? undefined : Number(purchasePrice),
-      salePrice: salePrice === '' ? undefined : Number(salePrice),
-      createdBy: editingShipment ? editingShipment.createdBy : (loggedInUser ? loggedInUser.personnelName : 'Sistem')
+      purchasePrice: purchasePrice === '' ? null as any : Number(purchasePrice),
+      salePrice: salePrice === '' ? null as any : Number(salePrice),
+      createdBy: (editingShipment && editingShipment.createdBy) ? editingShipment.createdBy : (loggedInUser ? loggedInUser.personnelName : 'Sistem')
     };
 
     if (editingShipment) {
@@ -599,12 +599,12 @@ export default function ShipmentsPanel({
                   <td className="p-3">
                     <div className="font-extrabold text-blue-955 dark:text-slate-200 text-xs sm:text-sm">{s.cargoType}</div>
                     <div className="text-[10px] text-slate-400 font-mono">{s.carrier} | {s.weight.toLocaleString()} kg</div>
-                    {(s.purchasePrice !== undefined || s.salePrice !== undefined) && (
+                    {(s.purchasePrice != null || s.salePrice != null) && (
                       <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        {s.purchasePrice !== undefined && <span>Alış: {s.purchasePrice}₺</span>}
-                        {s.purchasePrice !== undefined && s.salePrice !== undefined && <span> | </span>}
-                        {s.salePrice !== undefined && <span>Satış: {s.salePrice}₺</span>}
-                        {s.purchasePrice !== undefined && s.salePrice !== undefined && (
+                        {s.purchasePrice != null && <span>Alış: {s.purchasePrice}₺</span>}
+                        {s.purchasePrice != null && s.salePrice != null && <span> | </span>}
+                        {s.salePrice != null && <span>Satış: {s.salePrice}₺</span>}
+                        {s.purchasePrice != null && s.salePrice != null && (
                           <span className="font-bold text-green-600 ml-1">
                             ({s.salePrice - s.purchasePrice}₺ Kâr)
                           </span>
@@ -673,12 +673,12 @@ export default function ShipmentsPanel({
                 <div>
                   <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 block">Yük / Ağırlık</span>
                   {s.cargoType} ({s.weight} kg)
-                  {(s.purchasePrice !== undefined || s.salePrice !== undefined) && (
+                  {(s.purchasePrice != null || s.salePrice != null) && (
                     <div className="text-[10px] mt-1">
-                      {s.purchasePrice !== undefined && <span>A: {s.purchasePrice}₺</span>}
-                      {s.purchasePrice !== undefined && s.salePrice !== undefined && <span> | </span>}
-                      {s.salePrice !== undefined && <span>S: {s.salePrice}₺</span>}
-                      {s.purchasePrice !== undefined && s.salePrice !== undefined && (
+                      {s.purchasePrice != null && <span>A: {s.purchasePrice}₺</span>}
+                      {s.purchasePrice != null && s.salePrice != null && <span> | </span>}
+                      {s.salePrice != null && <span>S: {s.salePrice}₺</span>}
+                      {s.purchasePrice != null && s.salePrice != null && (
                         <span className="font-bold text-green-600 ml-1">
                           (Kâr: {s.salePrice - s.purchasePrice}₺)
                         </span>

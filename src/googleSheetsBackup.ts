@@ -457,7 +457,7 @@ export async function backupToGoogleSheets(
     'Kalkış Tarihi', 'Tahmini Varış', 'Gecikme (dk)', 'Gecikme Nedeni', 'Oluşturan'
   ];
   const shipmentRows = shipments.map(s => {
-    const profit = (s.purchasePrice !== undefined && s.salePrice !== undefined) ? (s.salePrice - s.purchasePrice) : '';
+    const profit = (s.purchasePrice != null && s.salePrice != null) ? (s.salePrice - s.purchasePrice) : '';
     return [
       s.id,
       s.trackingNumber,
@@ -468,8 +468,8 @@ export async function backupToGoogleSheets(
       s.carrier,
       s.cargoType,
       s.weight.toString(),
-      s.purchasePrice !== undefined ? s.purchasePrice.toString() : '',
-      s.salePrice !== undefined ? s.salePrice.toString() : '',
+      s.purchasePrice != null ? s.purchasePrice.toString() : '',
+      s.salePrice != null ? s.salePrice.toString() : '',
       profit.toString(),
       s.departureDate,
       s.estimatedArrival,
