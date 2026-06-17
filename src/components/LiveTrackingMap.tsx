@@ -249,7 +249,11 @@ export default function LiveTrackingMap({
     const pointsToFit: L.LatLng[] = [];
 
     shipments.forEach((s) => {
-      const { currentRoute, currentRouteCities } = getHighwayRoutes(s.origin, s.destination);
+      const { currentRouteCities } = getHighwayRoutes(s.origin, s.destination);
+      
+      const startCoord = getCityCoords(s.origin);
+      const endCoord = getCityCoords(s.destination);
+      const straightRoute: [number, number][] = [startCoord, endCoord];
 
       let fraction = 0;
       let statusColor = 'bg-blue-500';
@@ -273,14 +277,15 @@ export default function LiveTrackingMap({
         pulseStyle = 'border-slate-500 shadow-slate-500/30';
       }
 
-      const activeCoord = interpolateRoutePoints(currentRoute, fraction);
+      const activeCoord = interpolateRoutePoints(straightRoute, fraction);
       
       // Store all traversed points for map bounding box fits
-      currentRoute.forEach(pt => pointsToFit.push(L.latLng(pt)));
+      pointsToFit.push(L.latLng(startCoord));
+      pointsToFit.push(L.latLng(endCoord));
       pointsToFit.push(L.latLng(activeCoord));
 
-      // Draw Current Route (Mevcut Karayolu) - Solid Emerald path
-      const currentLine = L.polyline(currentRoute, {
+      // Draw Straight Route (Düz Çizgi Karayolu) - Solid Emerald path
+      const currentLine = L.polyline(straightRoute, {
         color: '#10b981',
         weight: 3.5,
         opacity: 0.85,
@@ -372,13 +377,15 @@ export default function LiveTrackingMap({
     const map = mapRef.current;
     if (!map) return;
 
-    const { currentRoute } = getHighwayRoutes(shipment.origin, shipment.destination);
+    const startCoord = getCityCoords(shipment.origin);
+    const endCoord = getCityCoords(shipment.destination);
+    const straightRoute: [number, number][] = [startCoord, endCoord];
     
     let offsetFraction = 0.45;
     if (shipment.status === 'preparing') offsetFraction = 0.05;
     if (shipment.status === 'delivered') offsetFraction = 1.0;
 
-    const approximateCoord = interpolateRoutePoints(currentRoute, offsetFraction);
+    const approximateCoord = interpolateRoutePoints(straightRoute, offsetFraction);
 
     map.setView(approximateCoord, 7, {
       animate: true,
