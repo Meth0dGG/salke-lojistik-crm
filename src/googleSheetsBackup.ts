@@ -33,9 +33,11 @@ export interface GoogleSheetsStatus {
 /**
  * GAPI kütüphanesini başlat
  */
-export async function initGapi(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const w = window as any;
+export const initGapi = async () => {
+  if (gapiInited) return;
+  const w = window as any;
+  
+  await new Promise<void>((resolve, reject) => {
     if (!w.gapi) {
       reject(new Error('Google API kütüphanesi yüklenemedi'));
       return;
@@ -49,11 +51,12 @@ export async function initGapi(): Promise<void> {
         gapiInited = true;
         resolve();
       } catch (err) {
+        console.error('GAPI Init Hatası:', err);
         reject(err);
       }
     });
   });
-}
+};
 
 /**
  * Google Identity Services'i başlat
