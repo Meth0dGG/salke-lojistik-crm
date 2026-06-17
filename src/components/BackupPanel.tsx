@@ -67,10 +67,13 @@ export default function BackupPanel({
   const [backupProgress, setBackupProgress] = useState(0);
   const [backupMessage, setBackupMessage] = useState('');
   const [googleApiReady, setGoogleApiReady] = useState(false);
+  const [backupsList, setBackupsList] = useState<Backup[]>(backups);
+  const [initError, setInitError] = useState<string>('');
   const [backupSuccess, setBackupSuccess] = useState(false);
 
   // Google API'yi başlat
   useEffect(() => {
+    let mounted = true;
     const initGoogle = async () => {
       // API'lerin yüklenmesini bekle
       const waitForApis = () => new Promise<void>((resolve) => {
@@ -90,22 +93,29 @@ export default function BackupPanel({
       
       if (!isGoogleApiLoaded()) {
         console.warn('Google API yüklenemedi');
+        setInitError('isGoogleApiLoaded false döndü');
         return;
       }
 
       try {
         await initGapi();
         initGis((status) => {
-          setGoogleStatus(status);
+          if (mounted) {
+            setGoogleStatus(status);
+          }
         });
-        setGoogleApiReady(true);
+        
+        if (mounted) {
+          setGoogleApiReady(true);
+        }
         
         // Önceki oturum varsa kontrol et
         if (isSignedIn()) {
           setGoogleStatus(prev => ({ ...prev, isSignedIn: true }));
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Google API başlatma hatası:', err);
+        setInitError(err?.message || String(err));
       }
     };
 
@@ -241,6 +251,17 @@ export default function BackupPanel({
             )}
           </div>
         </div>
+
+        {/* Debug info */}
+        {!googleApiReady && (
+          <div className="text-[10px] text-red-500 font-mono mt-2 p-2 bg-red-50 rounded">
+            DEBUG: href: {window.location.href}<br/>
+            gapi: {typeof (window as any).gapi}<br/>
+            google: {typeof (window as any).google}<br/>
+            oauth2: {typeof (window as any).google?.accounts?.oauth2}<br/>
+            error: {initError || 'Waiting...'}
+          </div>
+        )}
 
         {/* Bağlantı durumu */}
         {googleStatus.isSignedIn && (

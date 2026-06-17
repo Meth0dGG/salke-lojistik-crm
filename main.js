@@ -65,6 +65,10 @@ function createWindow() {
     icon: path.join(__dirname, 'build', 'icon.png')
   });
 
+  // Google OAuth (GIS) Electron olduğunu anlarsa scripti çalıştırmaz.
+  // Bu yüzden User-Agent'ı standart bir Chrome tarayıcısı gibi gösteriyoruz.
+  mainWindow.webContents.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
   // Geliştirici konsolunu (DevTools) kolay açmak için menüyü veya kısayolları standart tutalım.
   mainWindow.setMenuBarVisibility(false); // Menü çubuğunu gizle (temiz görünüm için)
 
