@@ -1,0 +1,6 @@
+{
+  "name": "Lojistik CRM Portali",
+  "description": "Lojistik operasyonlari, müsteri iliskileri (CRM), arac ve sefer takibi icin modül planlama, interaktif veri semasi olusturma ve canli prototip uygulamasi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
