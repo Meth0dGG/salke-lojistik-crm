@@ -586,8 +586,8 @@ export async function restoreFromGoogleSheets(
   const seenCustomerIds = new Set<string>();
   const customers: Customer[] = customerRows.map((row, index) => {
     let rowId = row[0]?.trim() || '';
-    // Eğer ID cus- ile başlamıyorsa veya zaten kullanılmışsa yeni ID üret
-    const isInvalid = !rowId.startsWith('cus-');
+    // Eğer ID cus- veya cust- ile başlamıyorsa veya zaten kullanılmışsa yeni ID üret
+    const isInvalid = !(rowId.startsWith('cus-') || rowId.startsWith('cust-'));
     let finalId = isInvalid ? `cus-${Date.now()}-${index}` : rowId;
     
     // Kopya ID kontrolü
@@ -620,7 +620,8 @@ export async function restoreFromGoogleSheets(
     const salePrice = saleStr ? parseFloat(saleStr) : undefined;
 
     let rowId = row[0]?.trim() || '';
-    const isInvalid = !rowId.startsWith('shp-');
+    // sh- veya shp- ile başlıyorsa geçerli kabul et, yoksa otomatik ID ata
+    const isInvalid = !(rowId.startsWith('shp-') || rowId.startsWith('sh-'));
     let finalId = isInvalid ? `shp-${Date.now()}-${index}` : rowId;
 
     if (seenShipmentIds.has(finalId)) {
@@ -630,7 +631,7 @@ export async function restoreFromGoogleSheets(
 
     return {
       id: finalId,
-      trackingNumber: row[1] || '',
+      trackingNumber: row[1]?.trim() || `TRK-${Math.floor(1000000 + Math.random() * 9000000)}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`,
       customerId: 'google-sheets-import', // Firestore rules require customerId
       customerName: row[2] || '',
       origin: row[3] || '',
