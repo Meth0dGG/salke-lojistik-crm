@@ -623,13 +623,34 @@ export async function restoreFromGoogleSheets(
       const lastCommaIdx = str.lastIndexOf(',');
       const lastDotIdx = str.lastIndexOf('.');
       
-      if (lastCommaIdx > lastDotIdx) {
-        // virgül ondalık (1.500,50)
-        str = str.replace(/\./g, '').replace(',', '.');
-      } else if (lastDotIdx > lastCommaIdx) {
-        // nokta ondalık (1,500.50)
-        str = str.replace(/,/g, '');
+      if (lastCommaIdx !== -1 && lastDotIdx !== -1) {
+        if (lastCommaIdx > lastDotIdx) {
+          // 1.500,50
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else {
+          // 1,500.50
+          str = str.replace(/,/g, '');
+        }
+      } else if (lastCommaIdx !== -1) {
+        // Sadece virgül var -> 1500,50
+        str = str.replace(',', '.');
+      } else if (lastDotIdx !== -1) {
+        // Sadece nokta var -> 17.000 veya 17.50
+        // Eğer noktadan sonra tam 3 rakam varsa, TR formatında bu binlik ayracıdır (17.000)
+        const parts = str.split('.');
+        // Tüm noktalar binlik ayracı mı kontrol et (örneğin 17.000.000)
+        let isThousandSeparator = true;
+        for (let i = 1; i < parts.length; i++) {
+          if (parts[i].length !== 3) {
+            isThousandSeparator = false;
+            break;
+          }
+        }
+        if (isThousandSeparator) {
+          str = str.replace(/\./g, '');
+        }
       }
+
       const parsed = parseFloat(str);
       return isNaN(parsed) ? undefined : parsed;
     };
