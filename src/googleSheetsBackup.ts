@@ -151,41 +151,47 @@ async function fetchUserInfo(): Promise<string | null> {
 }
 
 /**
- * Mevcut "Salke Lojistik CRM Yedek" spreadsheet'ini bul veya yeni oluştur
+ * Drive'da yedek dosyası ara (Sadece bulur, oluşturmaz)
  */
-export async function findOrCreateSpreadsheet(): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
+export async function findSpreadsheet(): Promise<{ spreadsheetId: string; spreadsheetUrl: string } | null> {
   const w = window as any;
   const token = w.gapi.client.getToken()?.access_token;
   
   if (!token) throw new Error('Google hesabına giriş yapılmamış');
 
-  // Mevcut spreadsheet'i Drive'da ara
-  let existingFileId = null;
-  let existingFileUrl = null;
+  const query = "name contains 'Salke Lojistik CRM Yedek' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false";
+  const encodedQuery = encodeURIComponent(query);
 
   try {
     const searchResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name contains 'Salke Lojistik CRM Yedek' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&orderBy=modifiedTime desc&fields=files(id,name,webViewLink)`,
+      `https://www.googleapis.com/drive/v3/files?q=${encodedQuery}&orderBy=modifiedTime%20desc&fields=files(id,name,webViewLink)`,
       {
         headers: { Authorization: `Bearer ${token}` }
       }
     );
     const searchData = await searchResponse.json();
     if (searchResponse.ok && searchData.files && searchData.files.length > 0) {
-      existingFileId = searchData.files[0].id;
-      existingFileUrl = searchData.files[0].webViewLink;
+      return {
+        spreadsheetId: searchData.files[0].id,
+        spreadsheetUrl: searchData.files[0].webViewLink
+      };
     } else if (!searchResponse.ok) {
-      console.warn("Drive API ile arama yapılamadı (Drive API aktif olmayabilir). Yeni tablo oluşturulacak.", searchData);
+      console.warn("Drive API ile arama yapılamadı.", searchData);
     }
   } catch (err) {
-    console.warn("Drive API ağ hatası. Yeni tablo oluşturulacak.", err);
+    console.warn("Drive API ağ hatası.", err);
   }
   
-  if (existingFileId && existingFileUrl) {
-    return {
-      spreadsheetId: existingFileId,
-      spreadsheetUrl: existingFileUrl
-    };
+  return null;
+}
+
+/**
+ * Mevcut "Salke Lojistik CRM Yedek" spreadsheet'ini bul veya yeni oluştur
+ */
+export async function findOrCreateSpreadsheet(): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
+  const existing = await findSpreadsheet();
+  if (existing) {
+    return existing;
   }
 
   // Yoksa yeni oluştur
@@ -563,7 +569,13 @@ export async function restoreFromGoogleSheets(
 ): Promise<{ customers: Customer[], shipments: Shipment[] }> {
   
   onProgress?.(10, 'Google Drive bağlantısı kuruluyor ve dosya aranıyor...');
-  const { spreadsheetId } = await findOrCreateSpreadsheet();
+  const spreadsheet = await findSpreadsheet();
+  
+  if (!spreadsheet) {
+    throw new Error("Google Drive'ınızda 'Salke Lojistik CRM Yedek' adında bir dosya bulunamadı. Lütfen önce bir yedek oluşturun veya tablo isminin doğru olduğundan emin olun.");
+  }
+  
+  const { spreadsheetId } = spreadsheet;
 
   onProgress?.(30, 'Müşteri verileri okunuyor...');
   const customerRows = await readSheetData(spreadsheetId, 'Müşteriler!A2:H');

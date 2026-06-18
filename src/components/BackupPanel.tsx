@@ -30,7 +30,7 @@ import {
   signOut, 
   backupToGoogleSheets, 
   restoreFromGoogleSheets,
-  findOrCreateSpreadsheet,
+  findSpreadsheet,
   isGoogleApiLoaded,
   isSignedIn,
   GoogleSheetsStatus
@@ -153,8 +153,11 @@ export default function BackupPanel({
     setIsRestoring(true);
     setBackupMessage('Yedek dosya aranıyor...');
     try {
-      const { spreadsheetUrl } = await findOrCreateSpreadsheet();
-      setRestoreConfirmationUrl(spreadsheetUrl);
+      const spreadsheet = await findSpreadsheet();
+      if (!spreadsheet) {
+        throw new Error("Google Drive'ınızda 'Salke Lojistik CRM Yedek' adında bir dosya bulunamadı. Lütfen önce bir yedek oluşturun veya tablo isminin doğruluğunu kontrol edin.");
+      }
+      setRestoreConfirmationUrl(spreadsheet.spreadsheetUrl);
     } catch(err: any) {
       console.error('Google Sheets dosya arama hatası:', err);
       setBackupMessage(`Hata: ${err.message}`);
