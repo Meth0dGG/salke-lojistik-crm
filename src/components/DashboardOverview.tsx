@@ -16,7 +16,9 @@ import {
   ArrowRight,
   Package,
   Globe,
-  Database
+  Database,
+  DollarSign,
+  TrendingUp as TrendingUpIcon
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -52,6 +54,26 @@ export default function DashboardOverview({
   const totalShipments = shipments.length;
   const activeCustomers = customers.filter(c => c.status !== 'inactive').length;
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const thisMonthStr = todayStr.substring(0, 7);
+
+  let dailyProfit = 0;
+  let monthlyProfit = 0;
+
+  shipments.forEach(s => {
+    if (s.purchasePrice != null && s.salePrice != null) {
+      const profit = s.salePrice - s.purchasePrice;
+      if (profit > 0) {
+        if (s.departureDate === todayStr) {
+          dailyProfit += profit;
+        }
+        if (s.departureDate.startsWith(thisMonthStr)) {
+          monthlyProfit += profit;
+        }
+      }
+    }
+  });
+
   // Render mock data for Monthly Performance (Recharts)
   const chartData = [
     { name: 'Ocak/Jan', tamamlanan: 98, hacim: 240 },
@@ -77,7 +99,7 @@ export default function DashboardOverview({
     <div className="space-y-6 fade-in" id="dashboard-overview-container">
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="kpi-grid">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="kpi-grid">
         
         {/* KPI 1: Shipments */}
         <div 
@@ -158,6 +180,52 @@ export default function DashboardOverview({
           </div>
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
             <span>AES-256 Korumalı Bulut</span>
+          </p>
+        </div>
+
+        {/* KPI 4: Daily Profit */}
+        <div 
+          className="bg-white dark:bg-slate-900/60 dark:border-slate-800 border border-slate-100 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-default group"
+          id="kpi-daily-profit"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-mono tracking-wider uppercase">
+              Günlük Kâr
+            </span>
+            <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
+              <DollarSign size={20} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-display text-slate-900 dark:text-slate-100">
+              {dailyProfit.toLocaleString('tr-TR')} ₺
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+            <span>Bugün (Sevk Edilenler)</span>
+          </p>
+        </div>
+
+        {/* KPI 5: Monthly Profit */}
+        <div 
+          className="bg-white dark:bg-slate-900/60 dark:border-slate-800 border border-slate-100 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-default group"
+          id="kpi-monthly-profit"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-mono tracking-wider uppercase">
+              Aylık Kâr
+            </span>
+            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform">
+              <TrendingUpIcon size={20} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-display text-slate-900 dark:text-slate-100">
+              {monthlyProfit.toLocaleString('tr-TR')} ₺
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+            <span>Bu Ay İçerisindeki Toplam</span>
           </p>
         </div>
       </div>
