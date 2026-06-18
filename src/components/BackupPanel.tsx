@@ -156,22 +156,57 @@ export default function BackupPanel({
     setIsCleaning(true);
     let deletedCount = 0;
     try {
-      const { deleteDoc, doc } = await import('firebase/firestore');
+      const { doc, writeBatch } = await import('firebase/firestore');
       const { db } = await import('../firebase');
+      
+      const docsToDelete = [];
 
-      const garbageCustomers = customers.filter(c => !c.name.trim() && !c.company.trim() && !c.email.trim() && !c.phone.trim());
-      for (const c of garbageCustomers) {
-        await deleteDoc(doc(db, 'customers', c.id));
-        deletedCount++;
+      // 1. Müşteriler: Çöp ve Kopyaları Bul
+      const seenCustomerSignatures = new Set<string>();
+      for (const c of customers) {
+        const isGarbage = !c.name.trim() && !c.company.trim() && !c.email.trim() && !c.phone.trim();
+        if (isGarbage) {
+          docsToDelete.push(doc(db, 'customers', c.id));
+          continue;
+        }
+        
+        const signature = `${c.name.trim()}-${c.company.trim()}-${c.phone.trim()}-${c.email.trim()}`;
+        if (seenCustomerSignatures.has(signature)) {
+          docsToDelete.push(doc(db, 'customers', c.id));
+        } else {
+          seenCustomerSignatures.add(signature);
+        }
       }
 
-      const garbageShipments = shipments.filter(s => !s.trackingNumber.trim() && !s.customerName.trim() && !s.origin.trim() && !s.destination.trim());
-      for (const s of garbageShipments) {
-        await deleteDoc(doc(db, 'shipments', s.id));
-        deletedCount++;
+      // 2. Sevkiyatlar: Çöp ve Kopyaları Bul
+      const seenShipmentSignatures = new Set<string>();
+      for (const s of shipments) {
+        const isGarbage = !s.trackingNumber.trim() && !s.customerName.trim() && !s.origin.trim() && !s.destination.trim();
+        if (isGarbage) {
+          docsToDelete.push(doc(db, 'shipments', s.id));
+          continue;
+        }
+        
+        const signature = `${s.trackingNumber.trim()}-${s.customerName.trim()}-${s.origin.trim()}-${s.destination.trim()}`;
+        if (seenShipmentSignatures.has(signature)) {
+          docsToDelete.push(doc(db, 'shipments', s.id));
+        } else {
+          seenShipmentSignatures.add(signature);
+        }
+      }
+
+      // Batch halinde (400'erli) hızlı sil
+      const chunkSize = 400;
+      for (let i = 0; i < docsToDelete.length; i += chunkSize) {
+        const chunk = docsToDelete.slice(i, i + chunkSize);
+        const batch = writeBatch(db);
+        chunk.forEach(d => batch.delete(d));
+        await batch.commit();
       }
       
-      alert(`Temizlik tamamlandı! Toplam ${deletedCount} adet çöp kayıt başarıyla silindi.`);
+      deletedCount = docsToDelete.length;
+      
+      alert(`Temizlik tamamlandı! Toplam ${deletedCount} adet çöp ve kopya kayıt başarıyla silindi.`);
     } catch(err: any) {
       alert(`Temizlik sırasında bir hata oluştu: ${err.message}`);
     } finally {
