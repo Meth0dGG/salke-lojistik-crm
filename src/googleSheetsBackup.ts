@@ -176,9 +176,18 @@ export async function findSpreadsheet(): Promise<{ spreadsheetId: string; spread
         spreadsheetUrl: searchData.files[0].webViewLink
       };
     } else if (!searchResponse.ok) {
+      const errMsg = searchData.error?.message || 'Bilinmeyen hata';
       console.warn("Drive API ile arama yapılamadı.", searchData);
+      
+      // Eğer Drive API aktif değilse özel bir uyarı göster
+      if (errMsg.includes('Drive API has not been used') || errMsg.includes('disabled') || searchResponse.status === 403) {
+         throw new Error("Google Drive API aktif değil! Lütfen Google Cloud Console üzerinden 'Google Drive API' servisini etkinleştirin.");
+      }
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message && err.message.includes('Google Drive API aktif değil')) {
+      throw err;
+    }
     console.warn("Drive API ağ hatası.", err);
   }
   
@@ -565,18 +574,12 @@ function reverseTranslateShipmentStatus(statusTr: string): Shipment['status'] {
  * Geri yükleme ana fonksiyonu
  */
 export async function restoreFromGoogleSheets(
+  spreadsheetId: string,
   onProgress?: (percent: number, message: string) => void
 ): Promise<{ customers: Customer[], shipments: Shipment[] }> {
   
-  onProgress?.(10, 'Google Drive bağlantısı kuruluyor ve dosya aranıyor...');
-  const spreadsheet = await findSpreadsheet();
+  onProgress?.(10, 'Google Drive bağlantısı kuruluyor...');
   
-  if (!spreadsheet) {
-    throw new Error("Google Drive'ınızda 'Salke Lojistik CRM Yedek' adında bir dosya bulunamadı. Lütfen önce bir yedek oluşturun veya tablo isminin doğru olduğundan emin olun.");
-  }
-  
-  const { spreadsheetId } = spreadsheet;
-
   onProgress?.(30, 'Müşteri verileri okunuyor...');
   const customerRows = await readSheetData(spreadsheetId, 'Müşteriler!A2:H');
   

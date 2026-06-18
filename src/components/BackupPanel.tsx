@@ -70,6 +70,7 @@ export default function BackupPanel({
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreConfirmationUrl, setRestoreConfirmationUrl] = useState<string | null>(null);
+  const [restoreConfirmationId, setRestoreConfirmationId] = useState<string | null>(null);
   const [backupProgress, setBackupProgress] = useState(0);
   const [backupMessage, setBackupMessage] = useState('');
   const [googleApiReady, setGoogleApiReady] = useState(false);
@@ -153,29 +154,53 @@ export default function BackupPanel({
     setIsRestoring(true);
     setBackupMessage('Yedek dosya aranıyor...');
     try {
-      const spreadsheet = await findSpreadsheet();
+      let spreadsheet = await findSpreadsheet();
+      
       if (!spreadsheet) {
-        throw new Error("Google Drive'ınızda 'Salke Lojistik CRM Yedek' adında bir dosya bulunamadı. Lütfen önce bir yedek oluşturun veya tablo isminin doğruluğunu kontrol edin.");
+        // Otomatik bulunamadıysa kullanıcıya manuel girmesini teklif et
+        const manualUrl = window.prompt("Google Drive'da yedek dosyanız otomatik olarak bulunamadı (Google Drive API kapalı olabilir).\n\nLütfen geri yüklemek istediğiniz Google Sheets tablosunun LİNKİNİ (URL) buraya yapıştırın:");
+        
+        if (!manualUrl) {
+          throw new Error("İşlem iptal edildi veya link girilmedi.");
+        }
+        
+        // URL'den ID'yi çıkar
+        // Örnek: https://docs.google.com/spreadsheets/d/1BxiMVs0Xry5n8t4/edit
+        const match = manualUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (!match || !match[1]) {
+          throw new Error("Geçersiz Google Sheets linki. Linkin içinde '/d/...' formatında bir ID bulunmalıdır.");
+        }
+        
+        spreadsheet = {
+          spreadsheetId: match[1],
+          spreadsheetUrl: manualUrl
+        };
       }
+      
+      setRestoreConfirmationId(spreadsheet.spreadsheetId);
       setRestoreConfirmationUrl(spreadsheet.spreadsheetUrl);
     } catch(err: any) {
       console.error('Google Sheets dosya arama hatası:', err);
-      setBackupMessage(`Hata: ${err.message}`);
-      setTimeout(() => setBackupMessage(''), 3000);
+      alert(err.message || 'Yedek dosyası aranırken bir hata oluştu.');
     } finally {
       setIsRestoring(false);
     }
   };
 
   const executeRestore = async () => {
+    if (!restoreConfirmationId) return;
+
+    const targetSpreadsheetId = restoreConfirmationId;
+
     setRestoreConfirmationUrl(null);
+    setRestoreConfirmationId(null);
     setIsRestoring(true);
     setBackupProgress(0);
     setBackupMessage('Geri yükleme başlatılıyor...');
     setBackupSuccess(false);
 
     try {
-      const result = await restoreFromGoogleSheets((percent, message) => {
+      const result = await restoreFromGoogleSheets(targetSpreadsheetId, (percent, message) => {
         setBackupProgress(percent);
         setBackupMessage(message);
       });
@@ -377,7 +402,7 @@ export default function BackupPanel({
                 Evet, Verileri Getir
               </button>
               <button
-                onClick={() => setRestoreConfirmationUrl(null)}
+                onClick={() => { setRestoreConfirmationUrl(null); setRestoreConfirmationId(null); }}
                 className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition"
               >
                 İptal
