@@ -614,10 +614,30 @@ export async function restoreFromGoogleSheets(
   const seenShipmentIds = new Set<string>();
   const shipments: Shipment[] = shipmentRows.map((row, index) => {
     // Fiyatları parse et
+    const parseCurrency = (val: any) => {
+      if (!val) return undefined;
+      if (typeof val === 'number') return val;
+      let str = String(val).trim().replace(/[^0-9.,-]/g, '');
+      if (!str) return undefined;
+      
+      const lastCommaIdx = str.lastIndexOf(',');
+      const lastDotIdx = str.lastIndexOf('.');
+      
+      if (lastCommaIdx > lastDotIdx) {
+        // virgül ondalık (1.500,50)
+        str = str.replace(/\./g, '').replace(',', '.');
+      } else if (lastDotIdx > lastCommaIdx) {
+        // nokta ondalık (1,500.50)
+        str = str.replace(/,/g, '');
+      }
+      const parsed = parseFloat(str);
+      return isNaN(parsed) ? undefined : parsed;
+    };
+
     const purchaseStr = row[9];
     const saleStr = row[10];
-    const purchasePrice = purchaseStr ? parseFloat(purchaseStr) : undefined;
-    const salePrice = saleStr ? parseFloat(saleStr) : undefined;
+    const purchasePrice = parseCurrency(purchaseStr);
+    const salePrice = parseCurrency(saleStr);
 
     let rowId = row[0]?.trim() || '';
     // sh- veya shp- ile başlıyorsa geçerli kabul et, yoksa otomatik ID ata

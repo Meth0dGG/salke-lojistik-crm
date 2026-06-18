@@ -60,14 +60,28 @@ export default function DashboardOverview({
   let dailyProfit = 0;
   let monthlyProfit = 0;
 
+  const normalizeDateStr = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('.')) {
+      const parts = dateStr.split('.');
+      if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    return dateStr;
+  };
+
   shipments.forEach(s => {
     if (s.purchasePrice != null && s.salePrice != null) {
-      const profit = s.salePrice - s.purchasePrice;
+      const profit = Number(s.salePrice) - Number(s.purchasePrice);
       if (profit > 0) {
-        if (s.departureDate === todayStr) {
+        const normDate = normalizeDateStr(s.departureDate);
+        if (normDate === todayStr) {
           dailyProfit += profit;
         }
-        if (s.departureDate.startsWith(thisMonthStr)) {
+        if (normDate.startsWith(thisMonthStr)) {
           monthlyProfit += profit;
         }
       }
