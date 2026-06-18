@@ -154,10 +154,21 @@ export default function BackupPanel({
     setIsRestoring(true);
     setBackupMessage('Yedek dosya aranıyor...');
     try {
-      let spreadsheet = await findSpreadsheet();
+      let spreadsheetId: string | null = null;
+      let spreadsheetUrl: string | null = null;
       
-      if (!spreadsheet) {
-        // Otomatik bulunamadıysa kullanıcıya manuel girmesini teklif et
+      try {
+        const spreadsheet = await findSpreadsheet();
+        if (spreadsheet) {
+          spreadsheetId = spreadsheet.spreadsheetId;
+          spreadsheetUrl = spreadsheet.spreadsheetUrl;
+        }
+      } catch (err: any) {
+        console.warn('Otomatik arama başarısız oldu (muhtemelen Drive API kapalı):', err.message);
+      }
+      
+      if (!spreadsheetId || !spreadsheetUrl) {
+        // Otomatik bulunamadıysa veya hata verdiyse kullanıcıya manuel girmesini teklif et
         const manualUrl = window.prompt("Google Drive'da yedek dosyanız otomatik olarak bulunamadı (Google Drive API kapalı olabilir).\n\nLütfen geri yüklemek istediğiniz Google Sheets tablosunun LİNKİNİ (URL) buraya yapıştırın:");
         
         if (!manualUrl) {
@@ -165,20 +176,17 @@ export default function BackupPanel({
         }
         
         // URL'den ID'yi çıkar
-        // Örnek: https://docs.google.com/spreadsheets/d/1BxiMVs0Xry5n8t4/edit
         const match = manualUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
         if (!match || !match[1]) {
           throw new Error("Geçersiz Google Sheets linki. Linkin içinde '/d/...' formatında bir ID bulunmalıdır.");
         }
         
-        spreadsheet = {
-          spreadsheetId: match[1],
-          spreadsheetUrl: manualUrl
-        };
+        spreadsheetId = match[1];
+        spreadsheetUrl = manualUrl;
       }
       
-      setRestoreConfirmationId(spreadsheet.spreadsheetId);
-      setRestoreConfirmationUrl(spreadsheet.spreadsheetUrl);
+      setRestoreConfirmationId(spreadsheetId);
+      setRestoreConfirmationUrl(spreadsheetUrl);
     } catch(err: any) {
       console.error('Google Sheets dosya arama hatası:', err);
       alert(err.message || 'Yedek dosyası aranırken bir hata oluştu.');
