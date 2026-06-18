@@ -606,7 +606,7 @@ export async function restoreFromGoogleSheets(
       representative: row[6] || '',
       country: row[7] || ''
     };
-  }).filter(c => c.name || c.company || c.email || c.phone); // Anlamlı bir verisi olanları al
+  }).filter(c => c.name.trim() || c.company.trim() || c.email.trim() || c.phone.trim()); // Anlamlı bir verisi olanları al
 
   onProgress?.(60, 'Sevkiyat verileri okunuyor...');
   const shipmentRows = await readSheetData(spreadsheetId, 'Sevkiyatlar!A2:Z');
@@ -647,7 +647,7 @@ export async function restoreFromGoogleSheets(
       delayReason: row[15] || '',
       createdBy: (row[16] && row[16] !== '-') ? row[16] : 'Sistem'
     };
-  }).filter(s => s.trackingNumber || s.customerName || s.origin || s.destination); // Anlamlı verisi olan sevkiyatları al
+  }).filter(s => s.trackingNumber.trim() || s.customerName.trim() || s.origin.trim() || s.destination.trim()); // Anlamlı verisi olan sevkiyatları al
 
   onProgress?.(100, 'Veriler başarıyla okundu!');
 
