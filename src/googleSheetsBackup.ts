@@ -507,3 +507,109 @@ export function isSignedIn(): boolean {
   const w = window as any;
   return !!(w.gapi?.client?.getToken());
 }
+
+/**
+ * Tablodan veri oku
+ */
+async function readSheetData(spreadsheetId: string, range: string): Promise<any[][]> {
+  const w = window as any;
+  const token = w.gapi.client.getToken()?.access_token;
+  
+  if (!token) throw new Error('Google hesabına giriş yapılmamış');
+
+  const response = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+  );
+  
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Veri okuma hatası');
+  }
+  
+  return data.values || [];
+}
+
+/**
+ * Durum geri çeviricileri
+ */
+function reverseTranslateCustomerStatus(statusTr: string): Customer['status'] {
+  const map: Record<string, Customer['status']> = {
+    'Aktif': 'active',
+    'Potansiyel': 'lead',
+    'VIP': 'vip',
+    'Pasif': 'inactive'
+  };
+  return map[statusTr] || 'active';
+}
+
+function reverseTranslateShipmentStatus(statusTr: string): Shipment['status'] {
+  const map: Record<string, Shipment['status']> = {
+    'Hazırlanıyor': 'preparing',
+    'Yolda': 'transit',
+    'Teslim Edildi': 'delivered',
+    'İptal': 'cancelled'
+  };
+  return map[statusTr] || 'preparing';
+}
+
+/**
+ * Geri yükleme ana fonksiyonu
+ */
+export async function restoreFromGoogleSheets(
+  onProgress?: (percent: number, message: string) => void
+): Promise<{ customers: Customer[], shipments: Shipment[] }> {
+  
+  onProgress?.(10, 'Google Drive bağlantısı kuruluyor ve dosya aranıyor...');
+  const { spreadsheetId } = await findOrCreateSpreadsheet();
+
+  onProgress?.(30, 'Müşteri verileri okunuyor...');
+  const customerRows = await readSheetData(spreadsheetId, 'Müşteriler!A2:H');
+  
+  const customers: Customer[] = customerRows.map(row => ({
+    id: row[0] || '',
+    name: row[1] || '',
+    company: row[2] || '',
+    email: row[3] || '',
+    phone: row[4] || '',
+    status: reverseTranslateCustomerStatus(row[5] || ''),
+    representative: row[6] || '',
+    country: row[7] || ''
+  })).filter(c => c.id); // Sadece geçerli ID'si olanları al
+
+  onProgress?.(60, 'Sevkiyat verileri okunuyor...');
+  const shipmentRows = await readSheetData(spreadsheetId, 'Sevkiyatlar!A2:Q');
+
+  const shipments: Shipment[] = shipmentRows.map(row => {
+    // Fiyatları parse et
+    const purchaseStr = row[9];
+    const saleStr = row[10];
+    const purchasePrice = purchaseStr ? parseFloat(purchaseStr) : undefined;
+    const salePrice = saleStr ? parseFloat(saleStr) : undefined;
+
+    return {
+      id: row[0] || '',
+      trackingNumber: row[1] || '',
+      customerName: row[2] || '',
+      origin: row[3] || '',
+      destination: row[4] || '',
+      status: reverseTranslateShipmentStatus(row[5] || ''),
+      carrier: row[6] || '',
+      cargoType: row[7] || '',
+      weight: parseFloat(row[8]) || 0,
+      purchasePrice: (purchasePrice !== undefined && !isNaN(purchasePrice)) ? purchasePrice : null,
+      salePrice: (salePrice !== undefined && !isNaN(salePrice)) ? salePrice : null,
+      departureDate: row[12] || '',
+      estimatedArrival: row[13] || '',
+      delayMinutes: parseInt(row[14]) || 0,
+      delayReason: row[15] || '',
+      createdBy: (row[16] && row[16] !== '-') ? row[16] : 'Sistem'
+    };
+  }).filter(s => s.id);
+
+  onProgress?.(100, 'Veriler başarıyla okundu!');
+
+  return { customers, shipments };
+}

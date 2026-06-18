@@ -29,6 +29,7 @@ import {
   signIn, 
   signOut, 
   backupToGoogleSheets, 
+  restoreFromGoogleSheets,
   isGoogleApiLoaded,
   isSignedIn,
   GoogleSheetsStatus
@@ -39,6 +40,7 @@ interface BackupPanelProps {
   userRole: UserRole;
   backups: Backup[];
   onTriggerBackup: () => void;
+  onRestore: (customers: Customer[], shipments: Shipment[]) => Promise<void>;
   customers: Customer[];
   shipments: Shipment[];
 }
@@ -48,6 +50,7 @@ export default function BackupPanel({
   userRole,
   backups,
   onTriggerBackup,
+  onRestore,
   customers,
   shipments
 }: BackupPanelProps) {
@@ -64,6 +67,7 @@ export default function BackupPanel({
     spreadsheetId: null
   });
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [backupProgress, setBackupProgress] = useState(0);
   const [backupMessage, setBackupMessage] = useState('');
   const [googleApiReady, setGoogleApiReady] = useState(false);
@@ -135,6 +139,47 @@ export default function BackupPanel({
       onTriggerBackup();
       setIsSimulating(false);
     }, 2000);
+  };
+
+  // Google Sheets'ten geri yükleme
+  const handleGoogleSheetsRestore = async () => {
+    if (!googleStatus.isSignedIn) {
+      signIn();
+      return;
+    }
+
+    if (!window.confirm("DİKKAT: Google Sheets'teki veriler sisteme eklenecek ve varsa aynı ID'ye sahip verilerin üzerine yazılacaktır. Onaylıyor musunuz?")) {
+      return;
+    }
+
+    setIsRestoring(true);
+    setBackupProgress(0);
+    setBackupMessage('Geri yükleme başlatılıyor...');
+    setBackupSuccess(false);
+
+    try {
+      const result = await restoreFromGoogleSheets((percent, message) => {
+        setBackupProgress(percent);
+        setBackupMessage(message);
+      });
+
+      setBackupMessage('Veriler Firebase\'e yazılıyor...');
+      await onRestore(result.customers, result.shipments);
+      
+      setBackupProgress(100);
+      setBackupMessage('Geri yükleme başarıyla tamamlandı!');
+      setBackupSuccess(true);
+      setTimeout(() => setBackupSuccess(false), 8000);
+    } catch (err: any) {
+      console.error('Google Sheets restore hatası:', err);
+      setBackupMessage(`Hata: ${err.message}`);
+    } finally {
+      setTimeout(() => {
+        setIsRestoring(false);
+        setBackupProgress(0);
+        setBackupMessage('');
+      }, 3000);
+    }
   };
 
   // Google Sheets'e yedekleme
@@ -211,11 +256,11 @@ export default function BackupPanel({
 
           <div className="flex items-center gap-2">
             {googleStatus.isSignedIn ? (
-              <>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 <button
                   onClick={handleGoogleSheetsBackup}
-                  disabled={isBackingUp}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer"
+                  disabled={isBackingUp || isRestoring}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer shadow-sm"
                   id="btn-google-sheets-backup"
                 >
                   {isBackingUp ? (
@@ -226,13 +271,26 @@ export default function BackupPanel({
                   {isBackingUp ? 'Yedekleniyor...' : "Google Sheets'e Yedekle"}
                 </button>
                 <button
+                  onClick={handleGoogleSheetsRestore}
+                  disabled={isBackingUp || isRestoring}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer shadow-sm"
+                  id="btn-google-sheets-restore"
+                >
+                  {isRestoring ? (
+                    <RotateCw size={15} className="animate-spin" />
+                  ) : (
+                    <ArrowDownToLine size={15} />
+                  )}
+                  {isRestoring ? 'Geri Yükleniyor...' : "Geri Yükle"}
+                </button>
+                <button
                   onClick={handleGoogleSignOut}
                   className="flex items-center gap-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition cursor-pointer"
                   title="Google hesabından çıkış"
                 >
                   <LogOut size={14} />
                 </button>
-              </>
+              </div>
             ) : (
               <button
                 onClick={handleGoogleSignIn}

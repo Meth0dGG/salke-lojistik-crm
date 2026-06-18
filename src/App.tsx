@@ -447,6 +447,31 @@ export default function App() {
     triggerToast(`Kimlik Değişti: Çalışma rolü ${activeT[role] || role} yapıldı.`);
   };
 
+  const handleGoogleSheetsRestore = async (restoredCustomers: Customer[], restoredShipments: Shipment[]) => {
+    if (currentUserRole !== 'admin') {
+      alert("Operasyon Yetki Engeli: Geri yükleme işlemleri sadece Sistem Yöneticisi yetkisindedir!");
+      return;
+    }
+
+    try {
+      // Upsert Customers
+      for (const c of restoredCustomers) {
+        await setDoc(doc(db, 'customers', c.id), c, { merge: true });
+      }
+
+      // Upsert Shipments
+      for (const s of restoredShipments) {
+        await setDoc(doc(db, 'shipments', s.id), s, { merge: true });
+      }
+
+      recordAuditLog('Google Sheets geri yüklemesi (Merge yapıldı)', 'warning');
+      triggerToast('Google Sheets verileri başarıyla sisteme aktarıldı!', 'success');
+    } catch (err: any) {
+      console.error('Restore Error:', err);
+      triggerToast(`Geri yükleme hatası: ${err.message}`, 'error');
+    }
+  };
+
   // Read notification bell helper
   const handleMarkAllNotificationsRead = () => {
     notifications.forEach(n => {
@@ -840,6 +865,7 @@ export default function App() {
                 userRole={currentUserRole}
                 backups={backups}
                 onTriggerBackup={handleTriggerManualBackup}
+                onRestore={handleGoogleSheetsRestore}
                 customers={customers}
                 shipments={shipments}
               />
