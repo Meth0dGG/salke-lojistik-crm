@@ -583,29 +583,34 @@ export async function restoreFromGoogleSheets(
   onProgress?.(30, 'Müşteri verileri okunuyor...');
   const customerRows = await readSheetData(spreadsheetId, 'Müşteriler!A2:H');
   
-  const customers: Customer[] = customerRows.map(row => ({
-    id: row[0] || '',
-    name: row[1] || '',
-    company: row[2] || '',
-    email: row[3] || '',
-    phone: row[4] || '',
-    status: reverseTranslateCustomerStatus(row[5] || ''),
-    representative: row[6] || '',
-    country: row[7] || ''
-  })).filter(c => c.id); // Sadece geçerli ID'si olanları al
+  const customers: Customer[] = customerRows.map((row, index) => {
+    const isNew = !row[0] || row[0].trim() === '';
+    return {
+      id: isNew ? `cus-${Date.now()}-${index}` : row[0],
+      name: row[1] || '',
+      company: row[2] || '',
+      email: row[3] || '',
+      phone: row[4] || '',
+      status: reverseTranslateCustomerStatus(row[5] || ''),
+      representative: row[6] || '',
+      country: row[7] || ''
+    };
+  }).filter(c => c.name || c.company); // Sadece ismi veya şirketi olan geçerli satırları al
 
   onProgress?.(60, 'Sevkiyat verileri okunuyor...');
   const shipmentRows = await readSheetData(spreadsheetId, 'Sevkiyatlar!A2:Q');
 
-  const shipments: Shipment[] = shipmentRows.map(row => {
+  const shipments: Shipment[] = shipmentRows.map((row, index) => {
     // Fiyatları parse et
     const purchaseStr = row[9];
     const saleStr = row[10];
     const purchasePrice = purchaseStr ? parseFloat(purchaseStr) : undefined;
     const salePrice = saleStr ? parseFloat(saleStr) : undefined;
 
+    const isNew = !row[0] || row[0].trim() === '';
+
     return {
-      id: row[0] || '',
+      id: isNew ? `shp-${Date.now()}-${index}` : row[0],
       trackingNumber: row[1] || '',
       customerName: row[2] || '',
       origin: row[3] || '',
@@ -622,7 +627,7 @@ export async function restoreFromGoogleSheets(
       delayReason: row[15] || '',
       createdBy: (row[16] && row[16] !== '-') ? row[16] : 'Sistem'
     };
-  }).filter(s => s.id);
+  }).filter(s => s.trackingNumber || s.customerName);
 
   onProgress?.(100, 'Veriler başarıyla okundu!');
 
