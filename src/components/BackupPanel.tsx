@@ -71,6 +71,8 @@ export default function BackupPanel({
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreConfirmationUrl, setRestoreConfirmationUrl] = useState<string | null>(null);
   const [restoreConfirmationId, setRestoreConfirmationId] = useState<string | null>(null);
+  const [showManualUrlModal, setShowManualUrlModal] = useState(false);
+  const [manualUrlInput, setManualUrlInput] = useState('');
   const [backupProgress, setBackupProgress] = useState(0);
   const [backupMessage, setBackupMessage] = useState('');
   const [googleApiReady, setGoogleApiReady] = useState(false);
@@ -168,21 +170,11 @@ export default function BackupPanel({
       }
       
       if (!spreadsheetId || !spreadsheetUrl) {
-        // Otomatik bulunamadıysa veya hata verdiyse kullanıcıya manuel girmesini teklif et
-        const manualUrl = window.prompt("Google Drive'da yedek dosyanız otomatik olarak bulunamadı (Google Drive API kapalı olabilir).\n\nLütfen geri yüklemek istediğiniz Google Sheets tablosunun LİNKİNİ (URL) buraya yapıştırın:");
-        
-        if (!manualUrl) {
-          throw new Error("İşlem iptal edildi veya link girilmedi.");
-        }
-        
-        // URL'den ID'yi çıkar
-        const match = manualUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-        if (!match || !match[1]) {
-          throw new Error("Geçersiz Google Sheets linki. Linkin içinde '/d/...' formatında bir ID bulunmalıdır.");
-        }
-        
-        spreadsheetId = match[1];
-        spreadsheetUrl = manualUrl;
+        // Electron'da window.prompt desteklenmediği için kendi modalımızı açıyoruz
+        setShowManualUrlModal(true);
+        setIsRestoring(false);
+        setBackupMessage('');
+        return;
       }
       
       setRestoreConfirmationId(spreadsheetId);
@@ -190,9 +182,26 @@ export default function BackupPanel({
     } catch(err: any) {
       console.error('Google Sheets dosya arama hatası:', err);
       alert(err.message || 'Yedek dosyası aranırken bir hata oluştu.');
-    } finally {
       setIsRestoring(false);
     }
+  };
+
+  const handleManualUrlSubmit = () => {
+    if (!manualUrlInput) {
+      setShowManualUrlModal(false);
+      return;
+    }
+    
+    const match = manualUrlInput.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!match || !match[1]) {
+      alert("Geçersiz Google Sheets linki. Linkin içinde '/d/...' formatında bir ID bulunmalıdır.");
+      return;
+    }
+    
+    setRestoreConfirmationId(match[1]);
+    setRestoreConfirmationUrl(manualUrlInput);
+    setShowManualUrlModal(false);
+    setManualUrlInput('');
   };
 
   const executeRestore = async () => {
@@ -415,6 +424,57 @@ export default function BackupPanel({
               >
                 İptal
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Manuel Link Giriş Penceresi */}
+        {showManualUrlModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-w-lg w-full p-6 animate-fade-in-up">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                  <Database className="text-indigo-500" />
+                  Yedek Bulunamadı
+                </h3>
+                <button
+                  onClick={() => setShowManualUrlModal(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Google Drive'da yedek dosyanız otomatik olarak bulunamadı (Drive API kapalı olabilir). 
+                  Lütfen geri yüklemek istediğiniz Google Sheets tablosunun LİNKİNİ (URL) aşağıya yapıştırın.
+                </p>
+                <input 
+                  type="text" 
+                  value={manualUrlInput}
+                  onChange={(e) => setManualUrlInput(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs0Xry5n8t4/edit"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition text-slate-800 dark:text-slate-200"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowManualUrlModal(false)}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                >
+                  İptal
+                </button>
+                <button
+                  onClick={handleManualUrlSubmit}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <CheckCircle size={16} />
+                  Onayla
+                </button>
+              </div>
             </div>
           </div>
         )}
