@@ -21,7 +21,8 @@ import {
   ExternalLink,
   Cloud,
   CircleCheckBig,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { Backup, UserRole, Customer, Shipment } from '../types';
 import { 
