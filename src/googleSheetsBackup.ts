@@ -153,7 +153,7 @@ async function fetchUserInfo(): Promise<string | null> {
 /**
  * Mevcut "Salke Lojistik CRM Yedek" spreadsheet'ini bul veya yeni oluştur
  */
-async function findOrCreateSpreadsheet(): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
+export async function findOrCreateSpreadsheet(): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
   const w = window as any;
   const token = w.gapi.client.getToken()?.access_token;
   

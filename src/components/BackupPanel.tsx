@@ -30,6 +30,7 @@ import {
   signOut, 
   backupToGoogleSheets, 
   restoreFromGoogleSheets,
+  findOrCreateSpreadsheet,
   isGoogleApiLoaded,
   isSignedIn,
   GoogleSheetsStatus
@@ -68,6 +69,7 @@ export default function BackupPanel({
   });
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreConfirmationUrl, setRestoreConfirmationUrl] = useState<string | null>(null);
   const [backupProgress, setBackupProgress] = useState(0);
   const [backupMessage, setBackupMessage] = useState('');
   const [googleApiReady, setGoogleApiReady] = useState(false);
@@ -148,10 +150,22 @@ export default function BackupPanel({
       return;
     }
 
-    if (!window.confirm("DİKKAT: Google Sheets'teki veriler sisteme eklenecek ve varsa aynı ID'ye sahip verilerin üzerine yazılacaktır. Onaylıyor musunuz?")) {
-      return;
+    setIsRestoring(true);
+    setBackupMessage('Yedek dosya aranıyor...');
+    try {
+      const { spreadsheetUrl } = await findOrCreateSpreadsheet();
+      setRestoreConfirmationUrl(spreadsheetUrl);
+    } catch(err: any) {
+      console.error('Google Sheets dosya arama hatası:', err);
+      setBackupMessage(`Hata: ${err.message}`);
+      setTimeout(() => setBackupMessage(''), 3000);
+    } finally {
+      setIsRestoring(false);
     }
+  };
 
+  const executeRestore = async () => {
+    setRestoreConfirmationUrl(null);
     setIsRestoring(true);
     setBackupProgress(0);
     setBackupMessage('Geri yükleme başlatılıyor...');
@@ -329,8 +343,48 @@ export default function BackupPanel({
           </div>
         )}
 
+        {/* Geri Yükleme Onay Penceresi */}
+        {restoreConfirmationUrl && (
+          <div className="p-4 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-3 shadow-sm animate-fade-in">
+            <h3 className="text-sm font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
+              <Database size={16} />
+              Geri Yükleme Onayı
+            </h3>
+            <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
+              Google Drive'ınızda <strong>Salke Lojistik CRM Yedek</strong> adını taşıyan en güncel tablo bulundu. 
+              Geri yükleme işlemi, bu tablodaki kayıtları veritabanınızla birleştirecek (aynı ID'ye sahip olanları güncelleyecek, yenileri ekleyecek).
+            </p>
+            
+            <a
+              href={restoreConfirmationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition mt-1"
+            >
+              <ExternalLink size={12} />
+              Aktarılacak Tabloyu İncele
+            </a>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-indigo-100 dark:border-indigo-800/50">
+              <button
+                onClick={executeRestore}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+              >
+                <CheckCircle size={14} />
+                Evet, Verileri Getir
+              </button>
+              <button
+                onClick={() => setRestoreConfirmationUrl(null)}
+                className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition"
+              >
+                İptal
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Yedekleme İlerleme Çubuğu */}
-        {isBackingUp && (
+        {(isBackingUp || isRestoring) && (
           <div className="p-4 bg-white/60 dark:bg-slate-900/40 rounded-xl space-y-3" id="sheets-backup-progress">
             <div className="flex justify-between items-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
               <span>{backupMessage}</span>
