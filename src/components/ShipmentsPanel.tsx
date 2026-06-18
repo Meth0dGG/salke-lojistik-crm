@@ -52,6 +52,10 @@ export default function ShipmentsPanel({
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  
   // Forms & Actions
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
@@ -226,6 +230,14 @@ export default function ShipmentsPanel({
     const timeB = parseInt(b.id.split('-')[1] || '0', 10);
     return timeB - timeA;
   });
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const currentShipments = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6 fade-in" id="shipments-panel-container">
@@ -587,8 +599,8 @@ export default function ShipmentsPanel({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filtered.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition">
+              {currentShipments.map((s) => (
+                <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition">
                   <td className="py-4 px-4 font-mono text-xs font-bold text-indigo-700 dark:text-sky-300">
                     {s.trackingNumber}
                   </td>
@@ -663,9 +675,37 @@ export default function ShipmentsPanel({
           </table>
         </div>
 
-        {/* Mobile List View */}
-        <div className="block lg:hidden divide-y divide-slate-100 dark:divide-slate-800" id="shipments-mobile-list">
-          {filtered.map((s) => (
+        {/* Pagination Controls */}
+        {viewMode === 'list' && totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Toplam {filtered.length} kayıttan {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filtered.length)} arası gösteriliyor
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Önceki
+              </button>
+              <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {currentPage} / {totalPages}
+              </div>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Sonraki
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800" id="shipments-mobile-list">
+          {viewMode === 'list' && currentShipments.map((s) => (
             <div key={s.id} className="p-4 space-y-3">
               <div className="flex justify-between items-start">
                 <div>

@@ -43,6 +43,10 @@ export default function CrmPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  
   // Modals / forms state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -149,6 +153,14 @@ export default function CrmPanel({
     
     return matchesSearch && matchesStatus;
   });
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / itemsPerPage));
+  const currentCustomers = filteredCustomers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6 fade-in" id="crm-panel-container">
@@ -348,7 +360,7 @@ export default function CrmPanel({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredCustomers.map((cust) => (
+              {currentCustomers.map((cust) => (
                 <tr key={cust.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition">
                   <td className="py-4 px-5">
                     <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{cust.company}</div>
@@ -406,10 +418,38 @@ export default function CrmPanel({
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Toplam {filteredCustomers.length} kayıttan {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredCustomers.length)} arası gösteriliyor
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Önceki
+              </button>
+              <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {currentPage} / {totalPages}
+              </div>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Sonraki
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Mobile Grid/List View */}
         <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800" id="customers-mobile-list">
-          {filteredCustomers.map((cust) => (
+          {currentCustomers.map((cust) => (
             <div key={cust.id} className="p-4 space-y-3">
               <div className="flex justify-between items-start">
                 <div>
