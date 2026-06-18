@@ -210,7 +210,7 @@ export default function ShipmentsPanel({
     onUpdateShipment(updated);
   };
 
-  // Filter list
+  // Filter and sort list (newest first)
   const filtered = shipments.filter(s => {
     const term = searchQuery.toLowerCase();
     const matchTerm = s.trackingNumber.toLowerCase().includes(term) ||
@@ -221,6 +221,10 @@ export default function ShipmentsPanel({
 
     const matchStatus = statusFilter === 'all' || s.status === statusFilter;
     return matchTerm && matchStatus;
+  }).sort((a, b) => {
+    const timeA = parseInt(a.id.split('-')[1] || '0', 10);
+    const timeB = parseInt(b.id.split('-')[1] || '0', 10);
+    return timeB - timeA;
   });
 
   return (
