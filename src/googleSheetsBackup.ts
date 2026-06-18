@@ -634,6 +634,7 @@ export async function restoreFromGoogleSheets(
     return {
       id: finalId,
       trackingNumber: row[1] || '',
+      customerId: 'google-sheets-import', // Firestore rules require customerId
       customerName: row[2] || '',
       origin: row[3] || '',
       destination: row[4] || '',
