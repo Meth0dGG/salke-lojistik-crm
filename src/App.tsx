@@ -456,13 +456,14 @@ export default function App() {
     try {
       // Paralel ve hızlı yazma için Firestore Batch kullan (Limit 500)
       const chunkSize = 400;
+      const batchPromises = [];
 
       // Upsert Customers
       for (let i = 0; i < restoredCustomers.length; i += chunkSize) {
         const chunk = restoredCustomers.slice(i, i + chunkSize);
         const batch = writeBatch(db);
         chunk.forEach(c => batch.set(doc(db, 'customers', c.id), c, { merge: true }));
-        await batch.commit();
+        batchPromises.push(batch.commit());
       }
 
       // Upsert Shipments
@@ -470,8 +471,11 @@ export default function App() {
         const chunk = restoredShipments.slice(i, i + chunkSize);
         const batch = writeBatch(db);
         chunk.forEach(s => batch.set(doc(db, 'shipments', s.id), s, { merge: true }));
-        await batch.commit();
+        batchPromises.push(batch.commit());
       }
+      
+      // Arka planda bitmesini bekle
+      Promise.all(batchPromises).catch(err => console.error('Batch sync error:', err));
 
       recordAuditLog('Google Sheets geri yüklemesi (Merge yapıldı)', 'warning');
       triggerToast('Google Sheets verileri başarıyla sisteme aktarıldı!', 'success');

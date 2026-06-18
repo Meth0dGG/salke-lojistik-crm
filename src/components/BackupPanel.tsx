@@ -197,16 +197,20 @@ export default function BackupPanel({
 
       // Batch halinde (400'erli) hızlı sil
       const chunkSize = 400;
+      const batchPromises = [];
       for (let i = 0; i < docsToDelete.length; i += chunkSize) {
         const chunk = docsToDelete.slice(i, i + chunkSize);
         const batch = writeBatch(db);
         chunk.forEach(d => batch.delete(d));
-        await batch.commit();
+        batchPromises.push(batch.commit());
       }
       
       deletedCount = docsToDelete.length;
       
-      alert(`Temizlik tamamlandı! Toplam ${deletedCount} adet çöp ve kopya kayıt başarıyla silindi.`);
+      // Arka planda bitmesini bekle
+      Promise.all(batchPromises).catch(err => console.error("Batch delete error: ", err));
+      
+      alert(`Temizlik işlemi başlatıldı! Toplam ${deletedCount} adet çöp ve kopya kayıt siliniyor. (Büyük verilerde arka planda birkaç saniye sürebilir)`);
     } catch(err: any) {
       alert(`Temizlik sırasında bir hata oluştu: ${err.message}`);
     } finally {
