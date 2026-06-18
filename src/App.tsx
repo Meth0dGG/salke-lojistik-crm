@@ -454,14 +454,19 @@ export default function App() {
     }
 
     try {
+      // Paralel ve hızlı yazma için Promise.all kullan
+      const chunkSize = 50;
+
       // Upsert Customers
-      for (const c of restoredCustomers) {
-        await setDoc(doc(db, 'customers', c.id), c, { merge: true });
+      for (let i = 0; i < restoredCustomers.length; i += chunkSize) {
+        const chunk = restoredCustomers.slice(i, i + chunkSize);
+        await Promise.all(chunk.map(c => setDoc(doc(db, 'customers', c.id), c, { merge: true })));
       }
 
       // Upsert Shipments
-      for (const s of restoredShipments) {
-        await setDoc(doc(db, 'shipments', s.id), s, { merge: true });
+      for (let i = 0; i < restoredShipments.length; i += chunkSize) {
+        const chunk = restoredShipments.slice(i, i + chunkSize);
+        await Promise.all(chunk.map(s => setDoc(doc(db, 'shipments', s.id), s, { merge: true })));
       }
 
       recordAuditLog('Google Sheets geri yüklemesi (Merge yapıldı)', 'warning');
