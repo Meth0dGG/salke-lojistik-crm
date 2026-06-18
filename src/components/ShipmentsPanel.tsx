@@ -579,7 +579,7 @@ export default function ShipmentsPanel({
 
       {/* Shipment Records / Live Map view toggle */}
       {viewMode === 'map' ? (
-        <LiveTrackingMap t={t} shipments={filtered} theme={theme} />
+        <LiveTrackingMap t={t} shipments={filtered.filter(s => s.status !== 'delivered')} theme={theme} />
       ) : (
         <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs" id="shipments-table-wrapper font">
         
