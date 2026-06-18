@@ -20,7 +20,8 @@ import {
   LogOut,
   ExternalLink,
   Cloud,
-  CircleCheckBig
+  CircleCheckBig,
+  X
 } from 'lucide-react';
 import { Backup, UserRole, Customer, Shipment } from '../types';
 import { 
