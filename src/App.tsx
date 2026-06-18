@@ -44,7 +44,7 @@ import {
 } from './mockData';
 
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
-import { collection, onSnapshot, setDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, setDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 
 // Modular children panels import
 import DashboardOverview from './components/DashboardOverview';
@@ -454,19 +454,23 @@ export default function App() {
     }
 
     try {
-      // Paralel ve hızlı yazma için Promise.all kullan
-      const chunkSize = 50;
+      // Paralel ve hızlı yazma için Firestore Batch kullan (Limit 500)
+      const chunkSize = 400;
 
       // Upsert Customers
       for (let i = 0; i < restoredCustomers.length; i += chunkSize) {
         const chunk = restoredCustomers.slice(i, i + chunkSize);
-        await Promise.all(chunk.map(c => setDoc(doc(db, 'customers', c.id), c, { merge: true })));
+        const batch = writeBatch(db);
+        chunk.forEach(c => batch.set(doc(db, 'customers', c.id), c, { merge: true }));
+        await batch.commit();
       }
 
       // Upsert Shipments
       for (let i = 0; i < restoredShipments.length; i += chunkSize) {
         const chunk = restoredShipments.slice(i, i + chunkSize);
-        await Promise.all(chunk.map(s => setDoc(doc(db, 'shipments', s.id), s, { merge: true })));
+        const batch = writeBatch(db);
+        chunk.forEach(s => batch.set(doc(db, 'shipments', s.id), s, { merge: true }));
+        await batch.commit();
       }
 
       recordAuditLog('Google Sheets geri yüklemesi (Merge yapıldı)', 'warning');

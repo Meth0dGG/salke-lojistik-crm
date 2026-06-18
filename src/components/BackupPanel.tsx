@@ -58,6 +58,7 @@ export default function BackupPanel({
 }: BackupPanelProps) {
   const [backupFrequency, setBackupFrequency] = useState<'hourly' | 'daily' | 'weekly'>('daily');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
   const [downloadSuccessCode, setDownloadSuccessCode] = useState<string | null>(null);
   
   // Google Sheets state
@@ -145,6 +146,36 @@ export default function BackupPanel({
       onTriggerBackup();
       setIsSimulating(false);
     }, 2000);
+  };
+
+  const handleCleanupDatabase = async () => {
+    const confirmed = window.confirm("Dikkat! Bu işlem veritabanınızdaki isimsiz (boş) veya kopya olarak oluşmuş çöp kayıtları kalıcı olarak temizleyecektir. Devam etmek istiyor musunuz?");
+    if (!confirmed) return;
+
+    setIsCleaning(true);
+    let deletedCount = 0;
+    try {
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+
+      const garbageCustomers = customers.filter(c => !c.name.trim() && !c.company.trim() && !c.email.trim() && !c.phone.trim());
+      for (const c of garbageCustomers) {
+        await deleteDoc(doc(db, 'customers', c.id));
+        deletedCount++;
+      }
+
+      const garbageShipments = shipments.filter(s => !s.trackingNumber.trim() && !s.customerName.trim() && !s.origin.trim() && !s.destination.trim());
+      for (const s of garbageShipments) {
+        await deleteDoc(doc(db, 'shipments', s.id));
+        deletedCount++;
+      }
+      
+      alert(`Temizlik tamamlandı! Toplam ${deletedCount} adet çöp kayıt başarıyla silindi.`);
+    } catch(err: any) {
+      alert(`Temizlik sırasında bir hata oluştu: ${err.message}`);
+    } finally {
+      setIsCleaning(false);
+    }
   };
 
   // Google Sheets'ten geri yükleme
@@ -548,19 +579,34 @@ export default function BackupPanel({
             {t.cloudStorageStatus}
           </h2>
 
-          <button
-            onClick={handleCreateManualBackup}
-            disabled={isSimulating}
-            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer dark:bg-sky-500`}
-            id="btn-manual-backup"
-          >
-            {isSimulating ? (
-              <RotateCw size={15} className="animate-spin" />
-            ) : (
-              <HardDriveUpload size={15} />
-            )}
-            {isSimulating ? "Yedek Alınıyor..." : t.createBackup}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCleanupDatabase}
+              disabled={isCleaning}
+              className={`flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-100 text-rose-600 hover:bg-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60 disabled:opacity-50 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer`}
+              title="Sistemdeki hayalet ve çöp kayıtları temizler"
+            >
+              {isCleaning ? (
+                <RotateCw size={15} className="animate-spin" />
+              ) : (
+                <Trash2 size={15} />
+              )}
+              {isCleaning ? "Temizleniyor..." : "Çöp Kayıtları Temizle"}
+            </button>
+            <button
+              onClick={handleCreateManualBackup}
+              disabled={isSimulating}
+              className={`flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer dark:bg-sky-500`}
+              id="btn-manual-backup"
+            >
+              {isSimulating ? (
+                <RotateCw size={15} className="animate-spin" />
+              ) : (
+                <HardDriveUpload size={15} />
+              )}
+              {isSimulating ? "Yedek Alınıyor..." : t.createBackup}
+            </button>
+          </div>
         </div>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-350">
           {t.cloudDesc}
