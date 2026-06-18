@@ -583,10 +583,21 @@ export async function restoreFromGoogleSheets(
   onProgress?.(30, 'Müşteri verileri okunuyor...');
   const customerRows = await readSheetData(spreadsheetId, 'Müşteriler!A2:H');
   
+  const seenCustomerIds = new Set<string>();
   const customers: Customer[] = customerRows.map((row, index) => {
-    const isNew = !row[0] || row[0].trim() === '';
+    let rowId = row[0]?.trim() || '';
+    // Eğer ID cus- ile başlamıyorsa veya zaten kullanılmışsa yeni ID üret
+    const isInvalid = !rowId.startsWith('cus-');
+    let finalId = isInvalid ? `cus-${Date.now()}-${index}` : rowId;
+    
+    // Kopya ID kontrolü
+    if (seenCustomerIds.has(finalId)) {
+      finalId = `cus-${Date.now()}-${index}-dup`;
+    }
+    seenCustomerIds.add(finalId);
+
     return {
-      id: isNew ? `cus-${Date.now()}-${index}` : row[0],
+      id: finalId,
       name: row[1] || '',
       company: row[2] || '',
       email: row[3] || '',
@@ -600,6 +611,7 @@ export async function restoreFromGoogleSheets(
   onProgress?.(60, 'Sevkiyat verileri okunuyor...');
   const shipmentRows = await readSheetData(spreadsheetId, 'Sevkiyatlar!A2:Q');
 
+  const seenShipmentIds = new Set<string>();
   const shipments: Shipment[] = shipmentRows.map((row, index) => {
     // Fiyatları parse et
     const purchaseStr = row[9];
@@ -607,10 +619,17 @@ export async function restoreFromGoogleSheets(
     const purchasePrice = purchaseStr ? parseFloat(purchaseStr) : undefined;
     const salePrice = saleStr ? parseFloat(saleStr) : undefined;
 
-    const isNew = !row[0] || row[0].trim() === '';
+    let rowId = row[0]?.trim() || '';
+    const isInvalid = !rowId.startsWith('shp-');
+    let finalId = isInvalid ? `shp-${Date.now()}-${index}` : rowId;
+
+    if (seenShipmentIds.has(finalId)) {
+      finalId = `shp-${Date.now()}-${index}-dup`;
+    }
+    seenShipmentIds.add(finalId);
 
     return {
-      id: isNew ? `shp-${Date.now()}-${index}` : row[0],
+      id: finalId,
       trackingNumber: row[1] || '',
       customerName: row[2] || '',
       origin: row[3] || '',
@@ -627,7 +646,7 @@ export async function restoreFromGoogleSheets(
       delayReason: row[15] || '',
       createdBy: (row[16] && row[16] !== '-') ? row[16] : 'Sistem'
     };
-  }).filter(s => s.trackingNumber || s.customerName);
+  }).filter(s => s.trackingNumber || s.customerName || s.origin || s.destination || s.carrier);
 
   onProgress?.(100, 'Veriler başarıyla okundu!');
 
