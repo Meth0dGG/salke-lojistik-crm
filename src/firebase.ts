@@ -66,7 +66,11 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  
+  // Show a friendly alert if it's a quota error so the user knows what's happening
+  if (errInfo.error && errInfo.error.toLowerCase().includes('quota')) {
+    alert("Firebase veritabanı günlük okuma kotası (50.000) doldu. Sistemin tekrar çalışması için gece yarısını (PST) beklemeli veya Firebase planınızı Blaze'e yükseltmelisiniz.");
+  }
 }
 
 // MANDATORY Core Connection Validation
