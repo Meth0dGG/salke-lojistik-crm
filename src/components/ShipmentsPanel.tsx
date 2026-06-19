@@ -620,11 +620,11 @@ export default function ShipmentsPanel({
                   <td className="py-4 px-4">
                     {(s.purchasePrice != null || s.salePrice != null) ? (
                       <div className="text-[10px] text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
-                        {s.purchasePrice != null && <div>Alış: {s.purchasePrice}₺</div>}
-                        {s.salePrice != null && <div>Satış: {s.salePrice}₺</div>}
+                        {s.purchasePrice != null && <div>Alış: {s.purchasePrice.toLocaleString('tr-TR')}₺</div>}
+                        {s.salePrice != null && <div>Satış: {s.salePrice.toLocaleString('tr-TR')}₺</div>}
                         {s.purchasePrice != null && s.salePrice != null && (
                           <div className="font-bold text-green-600 mt-1 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1">
-                            Kâr: {s.salePrice - s.purchasePrice}₺ 
+                            Kâr: {(s.salePrice - s.purchasePrice).toLocaleString('tr-TR')}₺ 
                             {s.purchasePrice > 0 && (
                               <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1.5 py-0.5 rounded-md">
                                 %{Math.round(((s.salePrice - s.purchasePrice) / s.purchasePrice) * 100)}
@@ -728,12 +728,12 @@ export default function ShipmentsPanel({
                   {s.cargoType} ({s.weight} kg)
                   {(s.purchasePrice != null || s.salePrice != null) && (
                     <div className="text-[10px] mt-1">
-                      {s.purchasePrice != null && <span>A: {s.purchasePrice}₺</span>}
+                      {s.purchasePrice != null && <span>A: {s.purchasePrice.toLocaleString('tr-TR')}₺</span>}
                       {s.purchasePrice != null && s.salePrice != null && <span> | </span>}
-                      {s.salePrice != null && <span>S: {s.salePrice}₺</span>}
+                      {s.salePrice != null && <span>S: {s.salePrice.toLocaleString('tr-TR')}₺</span>}
                       {s.purchasePrice != null && s.salePrice != null && (
                         <span className="font-bold text-green-600 ml-1 inline-flex items-center gap-0.5">
-                          (Kâr: {s.salePrice - s.purchasePrice}₺
+                          (Kâr: {(s.salePrice - s.purchasePrice).toLocaleString('tr-TR')}₺
                           {s.purchasePrice > 0 && (
                             <span className="text-[8px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1 py-0.5 rounded-md ml-0.5">
                               %{Math.round(((s.salePrice - s.purchasePrice) / s.purchasePrice) * 100)}
